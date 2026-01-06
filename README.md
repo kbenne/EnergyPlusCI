@@ -561,6 +561,69 @@ If you want to run a single template file explicitly:
 packer build ubuntu-2204-runner-iso.pkr.hcl
 ```
 
+---
+
+## 13. Ephemeral GitHub Actions Runner (Next Step)
+
+This repo now installs the GitHub Actions runner binary into the VM image, but **does not register it**. Registration is intended to happen at boot via cloud-init so each clone registers, runs a single job, and exits.
+
+### Image Contents
+
+During the Packer build, the runner is installed to:
+
+```
+/opt/actions-runner
+```
+
+and a helper script is placed at:
+
+```
+/opt/actions-runner/run-once.sh
+```
+
+This script expects:
+
+```
+run-once.sh <repo_or_org_url> <registration_token> [labels] [runner_name]
+```
+
+It registers, runs exactly one job (`--once`), and removes itself.
+
+### Cloud-Init User-Data (Per-Clone)
+
+Use the template `cloud-init/runner-user-data.pkrtpl` to register the runner at boot. Example values:
+
+```yaml
+repo_url: https://github.com/NREL/EnergyPlus
+runner_name: energyplus-runner-001
+runner_labels: energyplus,linux,x64,ubuntu-22.04
+registration_token: <REDACTED>
+```
+
+Render the template with your values and provide it to Proxmox as user-data (CloudInit drive + snippet). The token is short-lived and should be generated just before boot.
+
+### Token Generation (Manual)
+
+Generate a short-lived registration token for the repo:
+
+```bash
+gh api \
+  -X POST \
+  -H "Accept: application/vnd.github+json" \
+  /repos/NREL/EnergyPlus/actions/runners/registration-token \
+  --jq .token
+```
+
+### Labels
+
+Default labels used by the helper script:
+
+```
+energyplus,linux,x64,ubuntu-22.04
+```
+
+Override these via cloud-init if needed.
+
 #### Creating a Proxmox API Token
 
 You can create an API token for your Proxmox user either in the UI or via CLI.

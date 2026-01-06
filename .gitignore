@@ -5,3 +5,6 @@ packer_cache/
 *.pkr.hcl.lock
 crash.log
 crash.*.log
+cloud-init/*.rendered
+cloud-init/*.yaml
+cloud-init/*.yml

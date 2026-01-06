@@ -47,6 +47,18 @@ variable "ssh_password_hash" {
   description = "SHA-512 password hash for autoinstall (openssl passwd -6 'password')"
 }
 
+variable "runner_version" {
+  type        = string
+  description = "GitHub Actions runner version"
+  default     = "2.316.0"
+}
+
+variable "runner_arch" {
+  type        = string
+  description = "GitHub Actions runner architecture"
+  default     = "x64"
+}
+
 variable "http_bind_address" {
   type        = string
   description = "IP on the Packer host to bind the autoinstall HTTP server to"
@@ -126,13 +138,26 @@ build {
   name    = "ubuntu-2204-runner-template-from-iso"
   sources = ["source.proxmox-iso.ubuntu2204"]
 
+  provisioner "file" {
+    source      = "scripts/runner-once.sh"
+    destination = "/tmp/runner-once.sh"
+  }
+
   provisioner "shell" {
     inline_shebang = "/usr/bin/env bash"
     inline = [
       "set -euxo pipefail",
       "sudo apt-get update",
       "sudo apt-get install -y cloud-init qemu-guest-agent curl ca-certificates git build-essential python3",
-      "sudo snap install --classic cmake --channel=4.0"
+      "sudo snap install --classic cmake --channel=4.0",
+      "sudo mkdir -p /opt/actions-runner",
+      "sudo chown -R ${var.ssh_username}:${var.ssh_username} /opt/actions-runner",
+      "cd /opt/actions-runner",
+      "curl -fsSLO https://github.com/actions/runner/releases/download/v${var.runner_version}/actions-runner-linux-${var.runner_arch}-${var.runner_version}.tar.gz",
+      "tar -xzf actions-runner-linux-${var.runner_arch}-${var.runner_version}.tar.gz",
+      "rm -f actions-runner-linux-${var.runner_arch}-${var.runner_version}.tar.gz",
+      "sudo /opt/actions-runner/bin/installdependencies.sh",
+      "sudo install -m 0755 /tmp/runner-once.sh /opt/actions-runner/run-once.sh"
     ]
   }
 
