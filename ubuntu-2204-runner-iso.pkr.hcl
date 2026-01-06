@@ -52,17 +52,11 @@ variable "http_bind_address" {
   description = "IP on the Packer host to bind the autoinstall HTTP server to"
   default     = "0.0.0.0"
 }
-
-variable "http_seed_ip" {
-  type        = string
-  description = "IP on the Packer host that the VM can reach for autoinstall seed"
-}
-
-variable "http_port" {
-  type        = number
-  description = "Fixed port for the Packer autoinstall HTTP server"
-  default     = 8204
-}
+#
+#variable "http_seed_ip" {
+#  type        = string
+#  description = "IP on the Packer host that the VM can reach for autoinstall seed"
+#}
 
 source "proxmox-iso" "ubuntu2204" {
   proxmox_url              = var.proxmox_url
@@ -108,15 +102,13 @@ source "proxmox-iso" "ubuntu2204" {
     "/meta-data" = templatefile("${path.root}/http/meta-data.pkrtpl", {})
   }
   http_bind_address = var.http_bind_address
-  http_port_min     = var.http_port
-  http_port_max     = var.http_port
 
   boot_wait         = "15s"
   boot_key_interval = "100ms"
   boot_command = [
     "<esc><wait>",
     "c<wait>",
-    "linux /casper/vmlinuz quiet ip=dhcp autoinstall ds=nocloud-net\\;s=http://${var.http_seed_ip}:{{ .HTTPPort }}/ ---",
+    "linux /casper/vmlinuz quiet ip=dhcp autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP}}:{{ .HTTPPort }}/ ---",
     "<enter><wait>",
     "initrd /casper/initrd",
     "<enter><wait>",

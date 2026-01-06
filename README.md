@@ -551,6 +551,16 @@ Generate `ssh_password_hash` with:
 openssl passwd -6 'password'
 ```
 
+#### How Packer Picks Up This Template
+
+Running `packer build .` loads **all** `*.pkr.hcl` files in the current directory, which is why `ubuntu-2204-runner-iso.pkr.hcl` is used automatically. Packer also loads any `*.auto.pkrvars.hcl` file for variable values (e.g., `packer.auto.pkrvars.hcl`).
+
+If you want to run a single template file explicitly:
+
+```bash
+packer build ubuntu-2204-runner-iso.pkr.hcl
+```
+
 #### Creating a Proxmox API Token
 
 You can create an API token for your Proxmox user either in the UI or via CLI.
