@@ -1,0 +1,7 @@
+*.auto.pkrvars.hcl
+
+.packer.d/
+packer_cache/
+*.pkr.hcl.lock
+crash.log
+crash.*.log
