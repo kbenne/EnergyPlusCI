@@ -8,3 +8,5 @@ crash.*.log
 cloud-init/*.rendered
 cloud-init/*.yaml
 cloud-init/*.yml
+dispatcher/.env
+dispatcher/.venv
