@@ -45,7 +45,6 @@ CT_TEMPLATE_URL = env(
     "CT_TEMPLATE_URL",
     f"https://download.proxmox.com/images/system/{CT_TEMPLATE}",
 )
-CT_TEMPLATE_URL_VERIFY = env("CT_TEMPLATE_URL_VERIFY", "true").lower() in ("1", "true", "yes")
 
 # Service name inside the container.
 SERVICE_NAME = env("SERVICE_NAME", "dispatcher")
@@ -142,12 +141,7 @@ def download_template():
 
     # Fallback: download locally and upload to Proxmox storage.
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        with requests.get(
-            CT_TEMPLATE_URL,
-            stream=True,
-            timeout=300,
-            verify=CT_TEMPLATE_URL_VERIFY,
-        ) as resp:
+        with requests.get(CT_TEMPLATE_URL, stream=True, timeout=300) as resp:
             resp.raise_for_status()
             for chunk in resp.iter_content(chunk_size=1024 * 1024):
                 if chunk:
