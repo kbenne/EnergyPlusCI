@@ -109,13 +109,14 @@ setup_venv() {
 }
 
 write_env_file() {
+  local user_data_template="${USER_DATA_TEMPLATE:-}"
   pct exec "${CT_ID}" -- bash -lc "cat /dev/null > /etc/default/${SERVICE_NAME}
 if [[ -n \"${PROXMOX_URL:-}\" ]]; then echo \"PROXMOX_URL=${PROXMOX_URL}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${PROXMOX_NODE:-}\" ]]; then echo \"PROXMOX_NODE=${PROXMOX_NODE}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${PROXMOX_TOKEN_ID:-}\" ]]; then echo \"PROXMOX_TOKEN_ID=${PROXMOX_TOKEN_ID}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${PROXMOX_TOKEN_SECRET:-}\" ]]; then echo \"PROXMOX_TOKEN_SECRET=${PROXMOX_TOKEN_SECRET}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${GITHUB_TOKEN:-}\" ]]; then echo \"GITHUB_TOKEN=${GITHUB_TOKEN}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${USER_DATA_TEMPLATE:-}\" ]]; then echo \"USER_DATA_TEMPLATE=${USER_DATA_TEMPLATE}\" >> /etc/default/${SERVICE_NAME}; else echo \"USER_DATA_TEMPLATE=/opt/dispatcher/cloud-init/runner-user-data.pkrtpl\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${user_data_template}\" ]]; then echo \"USER_DATA_TEMPLATE=${user_data_template}\" >> /etc/default/${SERVICE_NAME}; else echo \"USER_DATA_TEMPLATE=/opt/dispatcher/cloud-init/runner-user-data.pkrtpl\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${PROXMOX_STORAGE:-}\" ]]; then echo \"PROXMOX_STORAGE=${PROXMOX_STORAGE}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${PROXMOX_VERIFY_SSL:-}\" ]]; then echo \"PROXMOX_VERIFY_SSL=${PROXMOX_VERIFY_SSL}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${TEMPLATE_NAME:-}\" ]]; then echo \"TEMPLATE_NAME=${TEMPLATE_NAME}\" >> /etc/default/${SERVICE_NAME}; fi
