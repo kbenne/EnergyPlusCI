@@ -43,7 +43,7 @@ CT_NET = env("CT_NET", f"name=eth0,bridge={CT_BRIDGE},ip=dhcp")
 CT_TEMPLATE = env("CT_TEMPLATE", "debian-12-standard_12.2-1_amd64.tar.zst")
 CT_TEMPLATE_URL = env(
     "CT_TEMPLATE_URL",
-    f"https://download.proxmox.com/images/system/{CT_TEMPLATE}",
+    f"https://na2.cdn.proxmox.com/images/system/{CT_TEMPLATE}",
 )
 CT_TEMPLATE_FILE = env("CT_TEMPLATE_FILE")
 
