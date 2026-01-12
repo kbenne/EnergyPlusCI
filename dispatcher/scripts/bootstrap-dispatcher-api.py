@@ -46,6 +46,7 @@ CT_TEMPLATE_URL = env(
     f"https://na.cdn.proxmox.com/images/system/{CT_TEMPLATE}",
 )
 CT_TEMPLATE_FILE = env("CT_TEMPLATE_FILE")
+CT_TEMPLATE_HOST_HEADER = env("CT_TEMPLATE_HOST_HEADER", "download.proxmox.com")
 
 # Service name inside the container.
 SERVICE_NAME = env("SERVICE_NAME", "dispatcher")
@@ -155,7 +156,15 @@ def download_template():
 
     # Fallback: download locally and upload to Proxmox storage.
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        with requests.get(CT_TEMPLATE_URL, stream=True, timeout=300) as resp:
+        headers = {}
+        if CT_TEMPLATE_HOST_HEADER:
+            headers["Host"] = CT_TEMPLATE_HOST_HEADER
+        with requests.get(
+            CT_TEMPLATE_URL,
+            headers=headers,
+            stream=True,
+            timeout=300,
+        ) as resp:
             resp.raise_for_status()
             for chunk in resp.iter_content(chunk_size=1024 * 1024):
                 if chunk:
