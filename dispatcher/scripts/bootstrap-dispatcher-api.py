@@ -152,11 +152,13 @@ def find_latest_debian_template():
             key = tuple(int(p) for p in parts)
         except ValueError:
             continue
-        candidates.append((key, template))
+        location = item.get("location") or item.get("url")
+        candidates.append((key, template, location))
     if not candidates:
         raise RuntimeError("no Debian 12 templates found in Proxmox APL list")
     candidates.sort()
-    return candidates[-1][1]
+    _, template, location = candidates[-1]
+    return template, location
 
 
 def iter_template_urls(template_name):
@@ -207,7 +209,9 @@ def download_template():
         if CT_TEMPLATE_HOST_HEADER:
             headers["Host"] = CT_TEMPLATE_HOST_HEADER
         last_error = None
+        tried = []
         for url in iter_template_urls(CT_TEMPLATE):
+            tried.append(url)
             try:
                 with requests.get(
                     url,
@@ -226,7 +230,13 @@ def download_template():
                 last_error = exc
                 continue
         else:
-            raise RuntimeError(f"unable to download template from CDN hosts: {last_error}")
+            msg = "unable to download template"
+            if tried:
+                msg += f" (tried: {', '.join(tried)})"
+            if last_error:
+                msg += f": {last_error}"
+            msg += ". Set CT_TEMPLATE_URL or CT_TEMPLATE_FILE to continue."
+            raise RuntimeError(msg)
         temp_path = tmp.name
 
     with open(temp_path, "rb") as handle:
@@ -366,8 +376,11 @@ def bootstrap_container(vmid):
 def main():
     # Ensure the LXC OS template exists, then create and bootstrap the container.
     global CT_TEMPLATE
+    global CT_TEMPLATE_URL
     if not CT_TEMPLATE:
-        CT_TEMPLATE = find_latest_debian_template()
+        CT_TEMPLATE, location = find_latest_debian_template()
+        if not CT_TEMPLATE_URL and location:
+            CT_TEMPLATE_URL = location
     if not template_exists():
         print(f"Template not found; requesting download of {CT_TEMPLATE} to {PROXMOX_STORAGE}...")
         download_template()

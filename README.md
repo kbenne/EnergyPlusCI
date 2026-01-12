@@ -191,7 +191,7 @@ Notes:
 - The script will download the Debian 12 LXC template if missing.
 - If the Proxmox API does not support direct template download, the script will download locally and upload it.
 - The dispatcher runs as a systemd service inside the container; if you used the bootstrap script, it is already enabled.
-- The script auto-discovers the latest Debian 12 template from Proxmox if `CT_TEMPLATE` is unset.
+- The script auto-discovers the latest Debian 12 template from Proxmox if `CT_TEMPLATE` is unset and uses the URL reported by Proxmox if available.
 - Override the download URL with `CT_TEMPLATE_URL` if you mirror templates locally.
 - The script tries multiple CDN hosts; override with `CT_TEMPLATE_CDN_HOSTS` if needed.
 - The default uses a CDN hostname with a `Host: download.proxmox.com` header. Override `CT_TEMPLATE_HOST_HEADER` if needed.
