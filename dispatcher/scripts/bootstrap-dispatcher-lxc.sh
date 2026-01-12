@@ -110,6 +110,17 @@ setup_venv() {
 
 write_env_file() {
   local user_data_template="${USER_DATA_TEMPLATE:-}"
+  local proxmox_storage="${PROXMOX_STORAGE:-}"
+  local proxmox_verify_ssl="${PROXMOX_VERIFY_SSL:-}"
+  local template_name="${TEMPLATE_NAME:-}"
+  local runner_id_start="${RUNNER_ID_START:-}"
+  local runner_id_end="${RUNNER_ID_END:-}"
+  local runner_name_prefix="${RUNNER_NAME_PREFIX:-}"
+  local repo_owner="${REPO_OWNER:-}"
+  local repo_name="${REPO_NAME:-}"
+  local repo_url="${REPO_URL:-}"
+  local runner_labels="${RUNNER_LABELS:-}"
+  local poll_interval="${POLL_INTERVAL:-}"
   pct exec "${CT_ID}" -- bash -lc "cat /dev/null > /etc/default/${SERVICE_NAME}
 if [[ -n \"${PROXMOX_URL:-}\" ]]; then echo \"PROXMOX_URL=${PROXMOX_URL}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${PROXMOX_NODE:-}\" ]]; then echo \"PROXMOX_NODE=${PROXMOX_NODE}\" >> /etc/default/${SERVICE_NAME}; fi
@@ -117,17 +128,17 @@ if [[ -n \"${PROXMOX_TOKEN_ID:-}\" ]]; then echo \"PROXMOX_TOKEN_ID=${PROXMOX_TO
 if [[ -n \"${PROXMOX_TOKEN_SECRET:-}\" ]]; then echo \"PROXMOX_TOKEN_SECRET=${PROXMOX_TOKEN_SECRET}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${GITHUB_TOKEN:-}\" ]]; then echo \"GITHUB_TOKEN=${GITHUB_TOKEN}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${user_data_template}\" ]]; then echo \"USER_DATA_TEMPLATE=${user_data_template}\" >> /etc/default/${SERVICE_NAME}; else echo \"USER_DATA_TEMPLATE=/opt/dispatcher/cloud-init/runner-user-data.pkrtpl\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${PROXMOX_STORAGE:-}\" ]]; then echo \"PROXMOX_STORAGE=${PROXMOX_STORAGE}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${PROXMOX_VERIFY_SSL:-}\" ]]; then echo \"PROXMOX_VERIFY_SSL=${PROXMOX_VERIFY_SSL}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${TEMPLATE_NAME:-}\" ]]; then echo \"TEMPLATE_NAME=${TEMPLATE_NAME}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${RUNNER_ID_START:-}\" ]]; then echo \"RUNNER_ID_START=${RUNNER_ID_START}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${RUNNER_ID_END:-}\" ]]; then echo \"RUNNER_ID_END=${RUNNER_ID_END}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${RUNNER_NAME_PREFIX:-}\" ]]; then echo \"RUNNER_NAME_PREFIX=${RUNNER_NAME_PREFIX}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${REPO_OWNER:-}\" ]]; then echo \"REPO_OWNER=${REPO_OWNER}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${REPO_NAME:-}\" ]]; then echo \"REPO_NAME=${REPO_NAME}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${REPO_URL:-}\" ]]; then echo \"REPO_URL=${REPO_URL}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${RUNNER_LABELS:-}\" ]]; then echo \"RUNNER_LABELS=${RUNNER_LABELS}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${POLL_INTERVAL:-}\" ]]; then echo \"POLL_INTERVAL=${POLL_INTERVAL}\" >> /etc/default/${SERVICE_NAME}; fi"
+if [[ -n \"${proxmox_storage}\" ]]; then echo \"PROXMOX_STORAGE=${proxmox_storage}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${proxmox_verify_ssl}\" ]]; then echo \"PROXMOX_VERIFY_SSL=${proxmox_verify_ssl}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${template_name}\" ]]; then echo \"TEMPLATE_NAME=${template_name}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${runner_id_start}\" ]]; then echo \"RUNNER_ID_START=${runner_id_start}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${runner_id_end}\" ]]; then echo \"RUNNER_ID_END=${runner_id_end}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${runner_name_prefix}\" ]]; then echo \"RUNNER_NAME_PREFIX=${runner_name_prefix}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${repo_owner}\" ]]; then echo \"REPO_OWNER=${repo_owner}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${repo_name}\" ]]; then echo \"REPO_NAME=${repo_name}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${repo_url}\" ]]; then echo \"REPO_URL=${repo_url}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${runner_labels}\" ]]; then echo \"RUNNER_LABELS=${runner_labels}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${poll_interval}\" ]]; then echo \"POLL_INTERVAL=${poll_interval}\" >> /etc/default/${SERVICE_NAME}; fi"
 }
 
 write_systemd() {
