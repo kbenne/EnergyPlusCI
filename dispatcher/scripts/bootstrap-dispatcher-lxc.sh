@@ -4,6 +4,8 @@ set -euo pipefail
 # Bootstrap a lightweight LXC on Proxmox to run the dispatcher as a systemd service.
 # Run this script on the Proxmox host.
 
+ENV_FILE="${ENV_FILE:-${DISPATCHER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}/dispatcher/dispatcher.env}"
+
 CT_ID="${CT_ID:-300}"
 CT_HOSTNAME="${CT_HOSTNAME:-dispatcher-1}"
 CT_STORAGE="${CT_STORAGE:-local-lvm}"
@@ -24,6 +26,11 @@ PROXMOX_NODE="${PROXMOX_NODE:-}"
 PROXMOX_TOKEN_ID="${PROXMOX_TOKEN_ID:-}"
 PROXMOX_TOKEN_SECRET="${PROXMOX_TOKEN_SECRET:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  # shellcheck source=/dev/null
+  source "${ENV_FILE}"
+fi
 
 if [[ -z "${PROXMOX_URL}" || -z "${PROXMOX_NODE}" || -z "${PROXMOX_TOKEN_ID}" || -z "${PROXMOX_TOKEN_SECRET}" || -z "${GITHUB_TOKEN}" ]]; then
   echo "Missing required env vars: PROXMOX_URL, PROXMOX_NODE, PROXMOX_TOKEN_ID, PROXMOX_TOKEN_SECRET, GITHUB_TOKEN" >&2

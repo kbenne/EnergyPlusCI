@@ -183,7 +183,8 @@ export GITHUB_TOKEN="REDACTED"
 Create and bootstrap the LXC:
 
 ```bash
-dispatcher/scripts/bootstrap-dispatcher-lxc.sh
+chmod +x dispatcher/scripts/bootstrap-dispatcher-lxc.sh
+sudo dispatcher/scripts/bootstrap-dispatcher-lxc.sh
 ```
 
 Notes:
