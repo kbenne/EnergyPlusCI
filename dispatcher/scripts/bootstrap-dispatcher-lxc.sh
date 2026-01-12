@@ -15,7 +15,7 @@ CT_DISK="${CT_DISK:-4}"
 CT_NET="${CT_NET:-name=eth0,bridge=${CT_BRIDGE},ip=dhcp}"
 CT_TEMPLATE="${CT_TEMPLATE:-}"
 
-DISPATCHER_DIR="${DISPATCHER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+DISPATCHER_DIR="${DISPATCHER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 SERVICE_NAME="${SERVICE_NAME:-dispatcher}"
 
 PROXMOX_URL="${PROXMOX_URL:-https://127.0.0.1:8006/api2/json}"
@@ -29,8 +29,8 @@ if [[ -z "${PROXMOX_URL}" || -z "${PROXMOX_NODE}" || -z "${PROXMOX_TOKEN_ID}" ||
   exit 1
 fi
 
-if [[ ! -d "${DISPATCHER_DIR}/dispatcher" || ! -d "${DISPATCHER_DIR}/cloud-init" ]]; then
-  echo "DISPATCHER_DIR must point to the repo root (contains dispatcher/ and cloud-init/)" >&2
+if [[ ! -d "${DISPATCHER_DIR}/dispatcher" || ! -d "${DISPATCHER_DIR}/runners/ubuntu-2204/cloud-init" ]]; then
+  echo "DISPATCHER_DIR must point to the repo root (contains dispatcher/ and runners/ubuntu-2204/)" >&2
   exit 1
 fi
 
@@ -80,7 +80,7 @@ push_files() {
   pct push "${CT_ID}" "${DISPATCHER_DIR}/dispatcher/dispatcher.py" /opt/dispatcher/dispatcher.py
   pct push "${CT_ID}" "${DISPATCHER_DIR}/dispatcher/requirements.txt" /opt/dispatcher/requirements.txt
   pct exec "${CT_ID}" -- mkdir -p /opt/dispatcher/cloud-init
-  pct push "${CT_ID}" "${DISPATCHER_DIR}/cloud-init/runner-user-data.pkrtpl" /opt/dispatcher/cloud-init/runner-user-data.pkrtpl
+  pct push "${CT_ID}" "${DISPATCHER_DIR}/runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl" /opt/dispatcher/cloud-init/runner-user-data.pkrtpl
 }
 
 setup_venv() {

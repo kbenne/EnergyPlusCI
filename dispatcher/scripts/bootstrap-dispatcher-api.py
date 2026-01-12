@@ -57,7 +57,7 @@ RUNNER_LABELS = os.getenv("RUNNER_LABELS")
 POLL_INTERVAL = os.getenv("POLL_INTERVAL")
 USER_DATA_TEMPLATE = env("USER_DATA_TEMPLATE", "/opt/dispatcher/cloud-init/runner-user-data.pkrtpl")
 # Repository root for reading dispatcher code and template files to push into the CT.
-DISPATCHER_DIR = Path(env("DISPATCHER_DIR", Path(__file__).resolve().parents[1]))
+DISPATCHER_DIR = Path(env("DISPATCHER_DIR", Path(__file__).resolve().parents[2]))
 
 
 def proxmox_headers():
@@ -170,7 +170,13 @@ def bootstrap_container(vmid):
     # Read the dispatcher code and assets from the repo.
     dispatcher_py = (DISPATCHER_DIR / "dispatcher" / "dispatcher.py").read_text(encoding="utf-8")
     requirements = (DISPATCHER_DIR / "dispatcher" / "requirements.txt").read_text(encoding="utf-8")
-    user_data_tpl = (DISPATCHER_DIR / "cloud-init" / "runner-user-data.pkrtpl").read_text(encoding="utf-8")
+    user_data_tpl = (
+        DISPATCHER_DIR
+        / "runners"
+        / "ubuntu-2204"
+        / "cloud-init"
+        / "runner-user-data.pkrtpl"
+    ).read_text(encoding="utf-8")
 
     # Write dispatcher files into the container filesystem.
     write_file(vmid, "/opt/dispatcher/dispatcher.py", dispatcher_py)

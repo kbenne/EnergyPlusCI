@@ -35,7 +35,9 @@ RUNNER_LABELS = env("RUNNER_LABELS", "energyplus,linux,x64,ubuntu-22.04")
 GITHUB_TOKEN = env("GITHUB_TOKEN", required=True)
 POLL_INTERVAL = int(env("POLL_INTERVAL", "15"))
 
-USER_DATA_TEMPLATE = env("USER_DATA_TEMPLATE", "cloud-init/runner-user-data.pkrtpl")
+USER_DATA_TEMPLATE = env(
+    "USER_DATA_TEMPLATE", "runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl"
+)
 
 
 def proxmox_headers():

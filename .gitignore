@@ -5,8 +5,8 @@ packer_cache/
 *.pkr.hcl.lock
 crash.log
 crash.*.log
-cloud-init/*.rendered
-cloud-init/*.yaml
-cloud-init/*.yml
+runners/ubuntu-2204/cloud-init/*.rendered
+runners/ubuntu-2204/cloud-init/*.yaml
+runners/ubuntu-2204/cloud-init/*.yml
 dispatcher/.env
 dispatcher/.venv

@@ -6,6 +6,13 @@ This document captures the steps **so far** for setting up a base virtual machin
 
 ---
 
+## Repo Layout
+
+- `runners/ubuntu-2204/` — Packer template + cloud-init templates for the Ubuntu 22.04 runner image
+- `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts
+
+---
+
 ## 1. Storage Concepts in Proxmox (Important Context)
 
 Proxmox typically provides two default storage backends:
@@ -516,13 +523,13 @@ This separation keeps the template reusable and avoids committing secrets to ver
 
 #### Recommended: Example Vars File + Local Secrets
 
-This repo includes `packer.pkrvars.hcl` as a safe, tracked example. To use it locally, copy it and add secrets:
+This repo includes `runners/ubuntu-2204/packer.pkrvars.hcl` as a safe, tracked example. To use it locally, copy it and add secrets:
 
 ```bash
-cp packer.pkrvars.hcl packer.auto.pkrvars.hcl
+cp runners/ubuntu-2204/packer.pkrvars.hcl runners/ubuntu-2204/packer.auto.pkrvars.hcl
 ```
 
-Then edit `packer.auto.pkrvars.hcl` to add your real secrets.
+Then edit `runners/ubuntu-2204/packer.auto.pkrvars.hcl` to add your real secrets.
 
 ```hcl
 proxmox_url       = "https://proxmox.lan:8006/api2/json"
@@ -542,7 +549,7 @@ Packer automatically loads any file matching `*.auto.pkrvars.hcl`, so you can si
 
 ```bash
 packer init .
-packer build .
+packer build runners/ubuntu-2204
 ```
 
 Generate `ssh_password_hash` with:
@@ -553,12 +560,12 @@ openssl passwd -6 'password'
 
 #### How Packer Picks Up This Template
 
-Running `packer build .` loads **all** `*.pkr.hcl` files in the current directory, which is why `ubuntu-2204-runner-iso.pkr.hcl` is used automatically. Packer also loads any `*.auto.pkrvars.hcl` file for variable values (e.g., `packer.auto.pkrvars.hcl`).
+Running `packer build .` loads **all** `*.pkr.hcl` files in the current directory, which is why `runners/ubuntu-2204/ubuntu-2204-runner-iso.pkr.hcl` is used when you run Packer from that folder. Packer also loads any `*.auto.pkrvars.hcl` file for variable values (e.g., `runners/ubuntu-2204/packer.auto.pkrvars.hcl`).
 
 If you want to run a single template file explicitly:
 
 ```bash
-packer build ubuntu-2204-runner-iso.pkr.hcl
+packer build runners/ubuntu-2204/ubuntu-2204-runner-iso.pkr.hcl
 ```
 
 ---
@@ -591,7 +598,7 @@ It registers, runs exactly one job (`--once`), and removes itself.
 
 ### Cloud-Init User-Data (Per-Clone)
 
-Use the template `cloud-init/runner-user-data.pkrtpl` to register the runner at boot. Example values:
+Use the template `runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl` to register the runner at boot. Example values:
 
 ```yaml
 repo_url: https://github.com/NREL/EnergyPlus
@@ -645,7 +652,7 @@ It enforces a **single runner at a time** and deletes stopped runner VMs on each
 ```
 dispatcher/dispatcher.py
 dispatcher/requirements.txt
-cloud-init/runner-user-data.pkrtpl
+runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl
 ```
 
 ### Environment Variables
@@ -674,7 +681,7 @@ REPO_NAME=EnergyPlus
 REPO_URL=https://github.com/NREL/EnergyPlus
 RUNNER_LABELS=energyplus,linux,x64,ubuntu-22.04
 POLL_INTERVAL=15
-USER_DATA_TEMPLATE=cloud-init/runner-user-data.pkrtpl
+USER_DATA_TEMPLATE=runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl
 ```
 
 ### Run (LXC Example)
@@ -711,7 +718,7 @@ export PROXMOX_TOKEN_ID="root@pam!packer"
 export PROXMOX_TOKEN_SECRET="REDACTED"
 export GITHUB_TOKEN="REDACTED"
 
-./scripts/bootstrap-dispatcher-lxc.sh
+./dispatcher/scripts/bootstrap-dispatcher-lxc.sh
 ```
 
 Any optional dispatcher environment variables you export before running the script (for example `PROXMOX_STORAGE`, `TEMPLATE_NAME`, `RUNNER_LABELS`, `POLL_INTERVAL`) will be written into `/etc/default/dispatcher` inside the LXC.
@@ -742,7 +749,7 @@ export PROXMOX_TOKEN_ID="root@pam!packer"
 export PROXMOX_TOKEN_SECRET="REDACTED"
 export GITHUB_TOKEN="REDACTED"
 
-python3 scripts/bootstrap-dispatcher-api.py
+python3 dispatcher/scripts/bootstrap-dispatcher-api.py
 ```
 
 Notes:
@@ -778,7 +785,7 @@ For improved security (especially in CI):
 - Pass variables on the command line:
 
   ```bash
-  packer build -var "ssh_password=..." .
+  packer build -var "ssh_password=..." runners/ubuntu-2204
   ```
 
 - Or use environment variables:
@@ -786,7 +793,7 @@ For improved security (especially in CI):
   ```bash
   export PKR_VAR_proxmox_token="..."
   export PKR_VAR_ssh_password="..."
-  packer build .
+  packer build runners/ubuntu-2204
   ```
 
 Packer resolves variable values in this priority order:
