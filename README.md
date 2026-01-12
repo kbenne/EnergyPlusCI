@@ -189,6 +189,7 @@ python3 dispatcher/scripts/bootstrap-dispatcher-api.py
 Notes:
 
 - The script will download the Debian 12 LXC template if missing.
+- If the Proxmox API does not support direct template download, the script will download locally and upload it.
 - The dispatcher runs as a systemd service inside the container; if you used the bootstrap script, it is already enabled.
 - Override the download URL with `CT_TEMPLATE_URL` if you mirror templates locally.
 - To check status inside the LXC: `systemctl status dispatcher`

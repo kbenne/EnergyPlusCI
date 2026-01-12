@@ -2,6 +2,7 @@
 import base64
 import os
 import time
+import tempfile
 from pathlib import Path
 
 import requests
@@ -80,10 +81,17 @@ def proxmox_get(path):
     return resp.json()["data"]
 
 
-def proxmox_post(path, data=None):
+def proxmox_post(path, data=None, files=None, timeout=30):
     # Thin wrapper for POST requests to Proxmox API paths.
     url = f"{PROXMOX_URL}{path}"
-    resp = requests.post(url, headers=proxmox_headers(), data=data, verify=PROXMOX_VERIFY_SSL, timeout=30)
+    resp = requests.post(
+        url,
+        headers=proxmox_headers(),
+        data=data,
+        files=files,
+        verify=PROXMOX_VERIFY_SSL,
+        timeout=timeout,
+    )
     resp.raise_for_status()
     return resp.json()["data"]
 
@@ -121,9 +129,34 @@ def download_template():
         "filename": CT_TEMPLATE,
         "url": CT_TEMPLATE_URL,
     }
-    upid = proxmox_post(
-        f"/nodes/{PROXMOX_NODE}/storage/{PROXMOX_STORAGE}/download", data=data
-    )
+    try:
+        upid = proxmox_post(
+            f"/nodes/{PROXMOX_NODE}/storage/{PROXMOX_STORAGE}/download", data=data
+        )
+        wait_for_task(upid)
+        return
+    except requests.HTTPError as exc:
+        if exc.response is None or exc.response.status_code != 501:
+            raise
+
+    # Fallback: download locally and upload to Proxmox storage.
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        with requests.get(CT_TEMPLATE_URL, stream=True, timeout=300) as resp:
+            resp.raise_for_status()
+            for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                if chunk:
+                    tmp.write(chunk)
+        temp_path = tmp.name
+
+    with open(temp_path, "rb") as handle:
+        files = {"filename": (CT_TEMPLATE, handle, "application/octet-stream")}
+        upload_data = {"content": "vztmpl"}
+        upid = proxmox_post(
+            f"/nodes/{PROXMOX_NODE}/storage/{PROXMOX_STORAGE}/upload",
+            data=upload_data,
+            files=files,
+            timeout=300,
+        )
     wait_for_task(upid)
 
 
