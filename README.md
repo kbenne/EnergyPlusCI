@@ -731,6 +731,26 @@ export CT_TEMPLATE=debian-12-standard_12.2-1_amd64.tar.zst
 
 The script will download a Debian 12 LXC template if needed, create the container, install Python, copy the dispatcher code, and enable the service.
 
+### Proxmox LXC Bootstrap (API-Only)
+
+If you want to bootstrap the dispatcher **without logging into the Proxmox host**, use:
+
+```bash
+export PROXMOX_URL="http://10.1.1.158:8006/api2/json"
+export PROXMOX_NODE="proxmox"
+export PROXMOX_TOKEN_ID="root@pam!packer"
+export PROXMOX_TOKEN_SECRET="REDACTED"
+export GITHUB_TOKEN="REDACTED"
+
+python3 scripts/bootstrap-dispatcher-api.py
+```
+
+Notes:
+
+- The LXC template must already exist in `local:vztmpl/` (the script will not download it).
+- The script uses the Proxmox `lxc/exec` API to install packages and write files.
+- Override the LXC template with `CT_TEMPLATE` if needed.
+
 #### Creating a Proxmox API Token
 
 You can create an API token for your Proxmox user either in the UI or via CLI.
