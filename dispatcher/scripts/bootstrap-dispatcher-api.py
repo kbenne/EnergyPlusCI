@@ -40,13 +40,23 @@ CT_MEMORY = env("CT_MEMORY", "512")
 CT_SWAP = env("CT_SWAP", "0")
 CT_DISK = env("CT_DISK", "4")
 CT_NET = env("CT_NET", f"name=eth0,bridge={CT_BRIDGE},ip=dhcp")
-CT_TEMPLATE = env("CT_TEMPLATE", "debian-12-standard_12.2-1_amd64.tar.zst")
-CT_TEMPLATE_URL = env(
-    "CT_TEMPLATE_URL",
-    f"https://na.cdn.proxmox.com/images/system/{CT_TEMPLATE}",
-)
+CT_TEMPLATE = env("CT_TEMPLATE")
+CT_TEMPLATE_URL = env("CT_TEMPLATE_URL")
 CT_TEMPLATE_FILE = env("CT_TEMPLATE_FILE")
 CT_TEMPLATE_HOST_HEADER = env("CT_TEMPLATE_HOST_HEADER", "download.proxmox.com")
+CT_TEMPLATE_CDN_HOSTS = env(
+    "CT_TEMPLATE_CDN_HOSTS",
+    ",".join(
+        [
+            "na.cdn.proxmox.com",
+            "de.cdn.proxmox.com",
+            "fr.cdn.proxmox.com",
+            "sg.cdn.proxmox.com",
+            "au.cdn.proxmox.com",
+            "za.cdn.proxmox.com",
+        ]
+    ),
+)
 
 # Service name inside the container.
 SERVICE_NAME = env("SERVICE_NAME", "dispatcher")
@@ -124,6 +134,42 @@ def template_exists():
     return False
 
 
+def find_latest_debian_template():
+    # Use the Proxmox APL list to discover the latest Debian 12 template name.
+    apl = proxmox_get(f"/nodes/{PROXMOX_NODE}/aplinfo")
+    candidates = []
+    for item in apl:
+        template = item.get("template")
+        if not template:
+            continue
+        if not template.startswith("debian-12-standard_"):
+            continue
+        if not template.endswith("_amd64.tar.zst"):
+            continue
+        version = template.replace("debian-12-standard_", "").replace("_amd64.tar.zst", "")
+        parts = version.replace("-", ".").split(".")
+        try:
+            key = tuple(int(p) for p in parts)
+        except ValueError:
+            continue
+        candidates.append((key, template))
+    if not candidates:
+        raise RuntimeError("no Debian 12 templates found in Proxmox APL list")
+    candidates.sort()
+    return candidates[-1][1]
+
+
+def iter_template_urls(template_name):
+    if CT_TEMPLATE_URL:
+        yield CT_TEMPLATE_URL
+        return
+    for host in CT_TEMPLATE_CDN_HOSTS.split(","):
+        host = host.strip()
+        if not host:
+            continue
+        yield f"https://{host}/images/system/{template_name}"
+
+
 def download_template():
     # Ask the Proxmox node to download the LXC template into storage.
     if CT_TEMPLATE_FILE:
@@ -142,33 +188,45 @@ def download_template():
     data = {
         "content": "vztmpl",
         "filename": CT_TEMPLATE,
-        "url": CT_TEMPLATE_URL,
+        "url": next(iter_template_urls(CT_TEMPLATE), None),
     }
-    try:
-        upid = proxmox_post(
-            f"/nodes/{PROXMOX_NODE}/storage/{PROXMOX_STORAGE}/download", data=data
-        )
-        wait_for_task(upid)
-        return
-    except requests.HTTPError as exc:
-        if exc.response is None or exc.response.status_code != 501:
-            raise
+    if data["url"]:
+        try:
+            upid = proxmox_post(
+                f"/nodes/{PROXMOX_NODE}/storage/{PROXMOX_STORAGE}/download", data=data
+            )
+            wait_for_task(upid)
+            return
+        except requests.HTTPError as exc:
+            if exc.response is None or exc.response.status_code != 501:
+                raise
 
     # Fallback: download locally and upload to Proxmox storage.
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         headers = {}
         if CT_TEMPLATE_HOST_HEADER:
             headers["Host"] = CT_TEMPLATE_HOST_HEADER
-        with requests.get(
-            CT_TEMPLATE_URL,
-            headers=headers,
-            stream=True,
-            timeout=300,
-        ) as resp:
-            resp.raise_for_status()
-            for chunk in resp.iter_content(chunk_size=1024 * 1024):
-                if chunk:
-                    tmp.write(chunk)
+        last_error = None
+        for url in iter_template_urls(CT_TEMPLATE):
+            try:
+                with requests.get(
+                    url,
+                    headers=headers,
+                    stream=True,
+                    timeout=300,
+                ) as resp:
+                    if resp.status_code == 404:
+                        continue
+                    resp.raise_for_status()
+                    for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            tmp.write(chunk)
+                    break
+            except requests.RequestException as exc:
+                last_error = exc
+                continue
+        else:
+            raise RuntimeError(f"unable to download template from CDN hosts: {last_error}")
         temp_path = tmp.name
 
     with open(temp_path, "rb") as handle:
@@ -307,6 +365,9 @@ def bootstrap_container(vmid):
 
 def main():
     # Ensure the LXC OS template exists, then create and bootstrap the container.
+    global CT_TEMPLATE
+    if not CT_TEMPLATE:
+        CT_TEMPLATE = find_latest_debian_template()
     if not template_exists():
         print(f"Template not found; requesting download of {CT_TEMPLATE} to {PROXMOX_STORAGE}...")
         download_template()
