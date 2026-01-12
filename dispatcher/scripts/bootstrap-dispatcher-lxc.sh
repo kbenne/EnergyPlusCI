@@ -14,6 +14,7 @@ CT_SWAP="${CT_SWAP:-0}"
 CT_DISK="${CT_DISK:-4}"
 CT_NET="${CT_NET:-name=eth0,bridge=${CT_BRIDGE},ip=dhcp}"
 CT_TEMPLATE="${CT_TEMPLATE:-}"
+CT_TEMPLATE_FILE="${CT_TEMPLATE_FILE:-}"
 
 DISPATCHER_DIR="${DISPATCHER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 SERVICE_NAME="${SERVICE_NAME:-dispatcher}"
@@ -35,6 +36,15 @@ if [[ ! -d "${DISPATCHER_DIR}/dispatcher" || ! -d "${DISPATCHER_DIR}/runners/ubu
 fi
 
 ensure_template() {
+  if [[ -n "${CT_TEMPLATE_FILE}" ]]; then
+    if [[ ! -f "${CT_TEMPLATE_FILE}" ]]; then
+      echo "CT_TEMPLATE_FILE not found: ${CT_TEMPLATE_FILE}" >&2
+      exit 1
+    fi
+    CT_TEMPLATE="$(basename "${CT_TEMPLATE_FILE}")"
+    cp -f "${CT_TEMPLATE_FILE}" "/var/lib/vz/template/cache/${CT_TEMPLATE}"
+    return 0
+  fi
   if [[ -n "${CT_TEMPLATE}" ]]; then
     return 0
   fi
@@ -44,9 +54,13 @@ ensure_template() {
     CT_TEMPLATE="${cached}"
     return 0
   fi
-  echo "No cached Debian 12 LXC template found in local storage; downloading..." >&2
-  pveam download local debian-12-standard_12.2-1_amd64.tar.zst
-  CT_TEMPLATE="debian-12-standard_12.2-1_amd64.tar.zst"
+  echo "No cached Debian 12 LXC template found in local storage; downloading latest..." >&2
+  CT_TEMPLATE="$(pveam available --section system | awk '{print $2}' | grep -E '^debian-12-standard_.*_amd64.tar.zst$' | sort -V | tail -n 1 || true)"
+  if [[ -z "${CT_TEMPLATE}" ]]; then
+    echo "Unable to find Debian 12 LXC template in pveam available list" >&2
+    exit 1
+  fi
+  pveam download local "${CT_TEMPLATE}"
 }
 
 create_container() {

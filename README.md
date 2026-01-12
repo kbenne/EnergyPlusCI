@@ -195,6 +195,7 @@ Notes:
 - Override the download URL with `CT_TEMPLATE_URL` if you mirror templates locally.
 - The script tries multiple CDN hosts; override with `CT_TEMPLATE_CDN_HOSTS` if needed.
 - The default uses a CDN hostname with a `Host: download.proxmox.com` header. Override `CT_TEMPLATE_HOST_HEADER` if needed.
+- If you already have the template tarball, set `CT_TEMPLATE_FILE` to upload it directly (works for both API and host bootstrap).
 - If you already have the template tarball, set `CT_TEMPLATE_FILE=/path/to/debian-12-standard_12.2-1_amd64.tar.zst` to upload it directly.
 - To check status inside the LXC: `systemctl status dispatcher`
 
