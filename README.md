@@ -747,7 +747,7 @@ python3 scripts/bootstrap-dispatcher-api.py
 
 Notes:
 
-- The LXC template must already exist in `local:vztmpl/` (the script will not download it).
+- If the LXC template is missing, the script will request a download via the Proxmox API.
 - The script uses the Proxmox `lxc/exec` API to install packages and write files.
 - Override the LXC template with `CT_TEMPLATE` if needed.
 
