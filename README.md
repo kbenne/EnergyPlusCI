@@ -15,7 +15,7 @@ This repo assumes you have:
 - **Proxmox VE**: The hypervisor platform that hosts the VM templates and ephemeral runner VMs.
 - **Packer**: HashiCorp tool used to build the Ubuntu VM template from an ISO.
 - **LXC**: Linux Containers used to run the dispatcher as a lightweight service (recommended).
-- **Python 3**: Required to run the dispatcher and the API-based bootstrap script.
+- **Python 3**: Required to run the dispatcher.
 - **GitHub CLI (`gh`)**: Used to generate runner registration tokens when doing manual testing.
 
 ---
@@ -23,7 +23,7 @@ This repo assumes you have:
 ## Repo Layout
 
 - `runners/ubuntu-2204/` — Packer template + cloud-init templates for the Ubuntu 22.04 runner image
-- `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts (see `dispatcher/README.md`)
+- `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts
 
 ---
 
@@ -156,7 +156,7 @@ The dispatcher uses this token only to request **short-lived runner registration
 
 ## 6. Bootstrap the Dispatcher LXC
 
-This method does **not** require logging into the Proxmox host. It uses the Proxmox API to create and bootstrap the LXC.
+Run the bootstrap script on the Proxmox host (it uses `pct` and `pveam`).
 
 To avoid re-exporting variables every time, create a local env file and source it:
 
@@ -180,22 +180,16 @@ export PROXMOX_TOKEN_SECRET="REDACTED"
 export GITHUB_TOKEN="REDACTED"
 ```
 
-Create and and boostrap the LXC
+Create and bootstrap the LXC:
 
 ```bash
-python3 dispatcher/scripts/bootstrap-dispatcher-api.py
+dispatcher/scripts/bootstrap-dispatcher-lxc.sh
 ```
 
 Notes:
 
 - The script will download the Debian 12 LXC template if missing.
-- If the Proxmox API does not support direct template download, the script will download locally and upload it.
 - The dispatcher runs as a systemd service inside the container; if you used the bootstrap script, it is already enabled.
-- The script auto-discovers the latest Debian 12 template from Proxmox if `CT_TEMPLATE` is unset and uses the URL reported by Proxmox if available.
-- Override the download URL with `CT_TEMPLATE_URL` if you mirror templates locally.
-- The script tries multiple CDN hosts; override with `CT_TEMPLATE_CDN_HOSTS` if needed.
-- The default uses a CDN hostname with a `Host: download.proxmox.com` header. Override `CT_TEMPLATE_HOST_HEADER` if needed.
-- If you already have the template tarball, set `CT_TEMPLATE_FILE` to upload it directly (works for both API and host bootstrap).
 - If you already have the template tarball, set `CT_TEMPLATE_FILE=/path/to/debian-12-standard_12.2-1_amd64.tar.zst` to upload it directly.
 - To check status inside the LXC: `systemctl status dispatcher`
 
