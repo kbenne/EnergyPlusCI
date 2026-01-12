@@ -193,6 +193,8 @@ Notes:
 - The dispatcher runs as a systemd service inside the container; if you used the bootstrap script, it is already enabled.
 - If you already have the template tarball, set `CT_TEMPLATE_FILE=/path/to/debian-12-standard_12.2-1_amd64.tar.zst` to upload it directly.
 - To check status inside the LXC: `systemctl status dispatcher`
+- If you want console login access, set `CT_ROOT_PASSWORD` before running the script.
+- Ensure `PROXMOX_URL` is resolvable from inside the LXC (use an IP if needed).
 
 ---
 ## 7. Secrets and Tokens

@@ -17,6 +17,7 @@ CT_DISK="${CT_DISK:-4}"
 CT_NET="${CT_NET:-name=eth0,bridge=${CT_BRIDGE},ip=dhcp}"
 CT_TEMPLATE="${CT_TEMPLATE:-}"
 CT_TEMPLATE_FILE="${CT_TEMPLATE_FILE:-}"
+CT_ROOT_PASSWORD="${CT_ROOT_PASSWORD:-}"
 
 DISPATCHER_DIR="${DISPATCHER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 SERVICE_NAME="${SERVICE_NAME:-dispatcher}"
@@ -92,6 +93,13 @@ start_container() {
   sleep 2
 }
 
+set_root_password() {
+  local root_password="${CT_ROOT_PASSWORD:-}"
+  if [[ -n "${root_password}" ]]; then
+    pct set "${CT_ID}" --password "${root_password}"
+  fi
+}
+
 install_deps() {
   pct exec "${CT_ID}" -- bash -lc "apt-get update && apt-get install -y python3 python3-venv python3-pip ca-certificates"
 }
@@ -164,6 +172,7 @@ EOF"
 ensure_template
 create_container
 start_container
+set_root_password
 install_deps
 push_files
 setup_venv
