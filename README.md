@@ -178,34 +178,58 @@ export PROXMOX_NODE="proxmox"
 export PROXMOX_TOKEN_ID="root@pam!packer"
 export PROXMOX_TOKEN_SECRET="REDACTED"
 export GITHUB_TOKEN="REDACTED"
+```
 
+Create and and boostrap the LXC
+
+```bash
 python3 dispatcher/scripts/bootstrap-dispatcher-api.py
 ```
 
 Notes:
 
 - The script will download the Debian 12 LXC template if missing.
-- `CT` stands for container (LXC). `CT_TEMPLATE` is the LXC OS tarball name used to create the container.
-- Override the template with `CT_TEMPLATE` if needed.
-- The dispatcher runs as a systemd service inside the container.
+- The dispatcher runs as a systemd service inside the container; if you used the bootstrap script, it is already enabled.
+- To check status inside the LXC: `systemctl status dispatcher`
 
 ---
-
-## 7. Start the Dispatcher
-
-If you used the bootstrap script, the service is already enabled. To check status inside the LXC:
-
-```bash
-systemctl status dispatcher
-```
-
----
-
-## 8. Secrets and Tokens
+## 7. Secrets and Tokens
 
 - Do not commit `packer.auto.pkrvars.hcl` or rendered cloud-init files.
 - Rotate any tokens exposed in chat or logs.
 - Prefer a dedicated Proxmox user/token for the dispatcher once stable.
+
+### Token Model (Three Tokens)
+
+There are three distinct tokens involved:
+
+1. **Dispatcher token (long-lived)**  
+   - **Scope:** GitHub API access to `NREL/EnergyPlus` only  
+   - **Created by:** Fine-grained PAT (see “GitHub Token” in the Dispatcher section)  
+   - **Used for:** Creating short-lived runner registration tokens  
+
+2. **Runner registration token (short-lived)**  
+   - **Scope:** Only registers a runner to the repo/org  
+   - **Created by:** GitHub API call from the dispatcher  
+   - **Used for:** One-time runner registration during boot  
+
+3. **Job token (`GITHUB_TOKEN`, per job)**  
+   - **Scope:** Determined by workflow `permissions:` and repo/org defaults  
+   - **Created by:** GitHub Actions for each job  
+   - **Used for:** GitHub operations during the job (checkout, API calls, releases)  
+
+### Lock Down Job Token Permissions
+
+To prevent runners from writing to the repo, set read-only permissions in workflows:
+
+```yaml
+permissions:
+  contents: read
+```
+
+Also set the repo default to read-only:
+
+- Settings → Actions → General → **Workflow permissions** → **Read repository contents permission**
 
 ---
 
