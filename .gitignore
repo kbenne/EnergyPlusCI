@@ -10,3 +10,4 @@ runners/ubuntu-2204/cloud-init/*.yaml
 runners/ubuntu-2204/cloud-init/*.yml
 dispatcher/.env
 dispatcher/.venv
+dispatcher/dispatcher.env

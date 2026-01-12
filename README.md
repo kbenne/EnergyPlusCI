@@ -8,10 +8,22 @@ This guide is **prescriptive**. Follow the steps in order.
 
 ---
 
+## Dependencies
+
+This repo assumes you have:
+
+- **Proxmox VE**: The hypervisor platform that hosts the VM templates and ephemeral runner VMs.
+- **Packer**: HashiCorp tool used to build the Ubuntu VM template from an ISO.
+- **LXC**: Linux Containers used to run the dispatcher as a lightweight service (recommended).
+- **Python 3**: Required to run the dispatcher and the API-based bootstrap script.
+- **GitHub CLI (`gh`)**: Used to generate runner registration tokens when doing manual testing.
+
+---
+
 ## Repo Layout
 
 - `runners/ubuntu-2204/` — Packer template + cloud-init templates for the Ubuntu 22.04 runner image
-- `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts
+- `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts (see `dispatcher/README.md`)
 
 ---
 
@@ -66,7 +78,7 @@ packer build runners/ubuntu-2204/ubuntu-2204-runner-iso.pkr.hcl
 
 The image includes:
 
-- Base build tooling (curl, git, build-essential, python3)
+- Base build tooling (curl, git, build-essential, python3, cmake)
 - `qemu-guest-agent`
 - GitHub Actions runner installed at `/opt/actions-runner`
 - One-shot runner script at `/opt/actions-runner/run-once.sh`
@@ -75,50 +87,19 @@ The runner is **not registered** in the image. Registration happens at boot via 
 
 ---
 
-## 4. Cloud-Init User-Data for Runner Registration
-
-Use the template:
-
-```
-runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl
-```
-
-It expects these values:
-
-- `repo_url` (e.g., `https://github.com/NREL/EnergyPlus`)
-- `runner_name`
-- `runner_labels`
-- `registration_token`
-
-Generate a short-lived registration token with the GitHub CLI:
-
-```bash
-gh api \
-  -X POST \
-  -H "Accept: application/vnd.github+json" \
-  /repos/NREL/EnergyPlus/actions/runners/registration-token \
-  --jq .token
-```
-
-Default runner labels:
-
-```
-energyplus,linux,x64,ubuntu-22.04
-```
-
 ---
 
 ## 5. Dispatcher (Autoscaler)
 
-The dispatcher runs outside Proxmox (recommended: LXC) and uses the Proxmox API + GitHub API to:
+The dispatcher runs in an LXC container and uses the Proxmox API + GitHub API to:
 
-1. Detect queued workflow runs
-2. Mint a registration token
-3. Render cloud-init user-data
+1. Detect queued workflow runs on GitHub (via the GitHub API)
+2. Mint a registration token (short-lived GitHub secret used once to register a runner)
+3. Render cloud-init user-data (cloud-init injects per-boot config like hostname and scripts)
 4. Upload the user-data snippet to Proxmox
 5. Clone the VM template and start a runner
 
-It enforces **one runner at a time** and deletes stopped runner VMs.
+It currently enforces **one runner at a time** and deletes stopped runner VMs.
 
 Files:
 
@@ -155,11 +136,41 @@ POLL_INTERVAL=15
 USER_DATA_TEMPLATE=runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl
 ```
 
+### GitHub Token (Fine-Grained, Recommended)
+
+Create a fine-grained personal access token for the dispatcher:
+
+1. GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**
+2. Resource owner: **NREL**
+3. Repository access: **Only select repositories** → `EnergyPlus`
+4. Permissions:
+   - **Actions**: Read and write
+   - **Administration**: Read and write
+5. If the org enforces SSO, authorize the token for the org
+
+Set this token as `GITHUB_TOKEN` for the dispatcher.
+
+The dispatcher uses this token only to request **short-lived runner registration tokens**, which are injected via cloud-init at boot. The runner uses the short-lived token to register and then the token becomes invalid after use.
+
 ---
 
-## 6. Bootstrap the Dispatcher LXC (API-only)
+## 6. Bootstrap the Dispatcher LXC
 
 This method does **not** require logging into the Proxmox host. It uses the Proxmox API to create and bootstrap the LXC.
+
+To avoid re-exporting variables every time, create a local env file and source it:
+
+```bash
+cp dispatcher/dispatcher.env.example dispatcher/dispatcher.env
+```
+
+Then add your secrets/overrides in `dispatcher/dispatcher.env`, and source it:
+
+```bash
+source dispatcher/dispatcher.env
+```
+
+If you prefer not to use an env file, you can still export manually:
 
 ```bash
 export PROXMOX_URL="http://10.1.1.158:8006/api2/json"
@@ -174,6 +185,7 @@ python3 dispatcher/scripts/bootstrap-dispatcher-api.py
 Notes:
 
 - The script will download the Debian 12 LXC template if missing.
+- `CT` stands for container (LXC). `CT_TEMPLATE` is the LXC OS tarball name used to create the container.
 - Override the template with `CT_TEMPLATE` if needed.
 - The dispatcher runs as a systemd service inside the container.
 
@@ -181,7 +193,7 @@ Notes:
 
 ## 7. Start the Dispatcher
 
-If you used the bootstrap script, the service is already enabled. To check status:
+If you used the bootstrap script, the service is already enabled. To check status inside the LXC:
 
 ```bash
 systemctl status dispatcher

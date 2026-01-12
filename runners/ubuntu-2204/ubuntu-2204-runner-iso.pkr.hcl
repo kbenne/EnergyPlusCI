@@ -107,11 +107,11 @@ source "proxmox-iso" "ubuntu2204" {
   }
 
   http_content = {
-    "/user-data" = templatefile("${path.root}/http/user-data.pkrtpl", {
+    "/user-data" = templatefile("${abspath(path.root)}/http/user-data.pkrtpl", {
       ssh_username      = var.ssh_username
       ssh_password_hash = var.ssh_password_hash
     })
-    "/meta-data" = templatefile("${path.root}/http/meta-data.pkrtpl", {})
+    "/meta-data" = templatefile("${abspath(path.root)}/http/meta-data.pkrtpl", {})
   }
   http_bind_address = var.http_bind_address
 
@@ -139,7 +139,7 @@ build {
   sources = ["source.proxmox-iso.ubuntu2204"]
 
   provisioner "file" {
-    source      = "scripts/runner-once.sh"
+    source      = "${abspath(path.root)}/scripts/runner-once.sh"
     destination = "/tmp/runner-once.sh"
   }
 
