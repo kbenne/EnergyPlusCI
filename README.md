@@ -192,6 +192,7 @@ Notes:
 - If the Proxmox API does not support direct template download, the script will download locally and upload it.
 - The dispatcher runs as a systemd service inside the container; if you used the bootstrap script, it is already enabled.
 - Override the download URL with `CT_TEMPLATE_URL` if you mirror templates locally.
+- If you already have the template tarball, set `CT_TEMPLATE_FILE=/path/to/debian-12-standard_12.2-1_amd64.tar.zst` to upload it directly.
 - To check status inside the LXC: `systemctl status dispatcher`
 
 ---

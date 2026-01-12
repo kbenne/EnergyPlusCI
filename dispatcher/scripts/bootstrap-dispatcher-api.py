@@ -45,6 +45,7 @@ CT_TEMPLATE_URL = env(
     "CT_TEMPLATE_URL",
     f"https://download.proxmox.com/images/system/{CT_TEMPLATE}",
 )
+CT_TEMPLATE_FILE = env("CT_TEMPLATE_FILE")
 
 # Service name inside the container.
 SERVICE_NAME = env("SERVICE_NAME", "dispatcher")
@@ -124,6 +125,19 @@ def template_exists():
 
 def download_template():
     # Ask the Proxmox node to download the LXC template into storage.
+    if CT_TEMPLATE_FILE:
+        with open(CT_TEMPLATE_FILE, "rb") as handle:
+            files = {"filename": (CT_TEMPLATE, handle, "application/octet-stream")}
+            upload_data = {"content": "vztmpl"}
+            upid = proxmox_post(
+                f"/nodes/{PROXMOX_NODE}/storage/{PROXMOX_STORAGE}/upload",
+                data=upload_data,
+                files=files,
+                timeout=300,
+            )
+        wait_for_task(upid)
+        return
+
     data = {
         "content": "vztmpl",
         "filename": CT_TEMPLATE,
