@@ -13,6 +13,7 @@ import requests
 def env(name, default=None, required=False):
     # Minimal env helper with optional required enforcement.
     value = os.getenv(name, default)
+    print(f"name: {name}, value {value}")
     if required and not value:
         raise SystemExit(f"missing required env var: {name}")
     return value
@@ -39,6 +40,10 @@ CT_SWAP = env("CT_SWAP", "0")
 CT_DISK = env("CT_DISK", "4")
 CT_NET = env("CT_NET", f"name=eth0,bridge={CT_BRIDGE},ip=dhcp")
 CT_TEMPLATE = env("CT_TEMPLATE", "debian-12-standard_12.2-1_amd64.tar.zst")
+CT_TEMPLATE_URL = env(
+    "CT_TEMPLATE_URL",
+    f"https://download.proxmox.com/images/system/{CT_TEMPLATE}",
+)
 
 # Service name inside the container.
 SERVICE_NAME = env("SERVICE_NAME", "dispatcher")
@@ -110,9 +115,15 @@ def template_exists():
 
 
 def download_template():
-    # Ask the Proxmox node to download the LXC template into storage (pveam download).
-    data = {"storage": PROXMOX_STORAGE, "template": CT_TEMPLATE}
-    upid = proxmox_post(f"/nodes/{PROXMOX_NODE}/apl/download", data=data)
+    # Ask the Proxmox node to download the LXC template into storage.
+    data = {
+        "content": "vztmpl",
+        "filename": CT_TEMPLATE,
+        "url": CT_TEMPLATE_URL,
+    }
+    upid = proxmox_post(
+        f"/nodes/{PROXMOX_NODE}/storage/{PROXMOX_STORAGE}/download", data=data
+    )
     wait_for_task(upid)
 
 
