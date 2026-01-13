@@ -96,7 +96,7 @@ start_container() {
 set_root_password() {
   local root_password="${CT_ROOT_PASSWORD:-}"
   if [[ -n "${root_password}" ]]; then
-    pct set "${CT_ID}" --password "${root_password}"
+    pct exec "${CT_ID}" -- bash -lc "echo root:${root_password} | chpasswd"
   fi
 }
 
