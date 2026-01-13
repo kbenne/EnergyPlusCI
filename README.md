@@ -195,6 +195,7 @@ Notes:
 - To check status inside the LXC: `systemctl status dispatcher`
 - If you want console login access, set `CT_ROOT_PASSWORD` before running the script.
 - Ensure `PROXMOX_URL` is resolvable from inside the LXC (use an IP if needed).
+- Use `PROXMOX_STORAGE=local` for snippets; `local-lvm` does not support snippets.
 
 ---
 ## 7. Secrets and Tokens
