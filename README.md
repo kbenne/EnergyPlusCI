@@ -196,6 +196,7 @@ Notes:
 - If you want console login access, set `CT_ROOT_PASSWORD` before running the script.
 - Ensure `PROXMOX_URL` is resolvable from inside the LXC (use an IP if needed).
 - Use `PROXMOX_STORAGE=local` for snippets; `local-lvm` does not support snippets.
+- If snippet uploads fail, set `SNIPPETS_DIR=/opt/dispatcher/snippets` to write snippets via a bind mount instead of the API.
 
 ---
 ## 7. Secrets and Tokens

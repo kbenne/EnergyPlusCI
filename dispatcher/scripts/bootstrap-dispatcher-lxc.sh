@@ -18,6 +18,7 @@ CT_NET="${CT_NET:-name=eth0,bridge=${CT_BRIDGE},ip=dhcp}"
 CT_TEMPLATE="${CT_TEMPLATE:-}"
 CT_TEMPLATE_FILE="${CT_TEMPLATE_FILE:-}"
 CT_ROOT_PASSWORD="${CT_ROOT_PASSWORD:-}"
+SNIPPETS_DIR="${SNIPPETS_DIR:-/opt/dispatcher/snippets}"
 
 DISPATCHER_DIR="${DISPATCHER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 SERVICE_NAME="${SERVICE_NAME:-dispatcher}"
@@ -87,6 +88,9 @@ create_container() {
     --net0 "${CT_NET}" \
     --features nesting=1 \
     --unprivileged 1
+  mkdir -p /var/lib/vz/snippets
+  chown 100000:100000 /var/lib/vz/snippets
+  pct set "${CT_ID}" --mp0 /var/lib/vz/snippets,mp="${SNIPPETS_DIR}"
 }
 
 start_container() {
@@ -130,6 +134,7 @@ write_env_file() {
   local repo_url="${REPO_URL:-}"
   local runner_labels="${RUNNER_LABELS:-}"
   local poll_interval="${POLL_INTERVAL:-}"
+  local snippets_dir="${SNIPPETS_DIR:-}"
   pct exec "${CT_ID}" -- bash -lc "cat /dev/null > /etc/default/${SERVICE_NAME}
 if [[ -n \"${PROXMOX_URL:-}\" ]]; then echo \"PROXMOX_URL=${PROXMOX_URL}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${PROXMOX_NODE:-}\" ]]; then echo \"PROXMOX_NODE=${PROXMOX_NODE}\" >> /etc/default/${SERVICE_NAME}; fi
@@ -147,7 +152,8 @@ if [[ -n \"${repo_owner}\" ]]; then echo \"REPO_OWNER=${repo_owner}\" >> /etc/de
 if [[ -n \"${repo_name}\" ]]; then echo \"REPO_NAME=${repo_name}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${repo_url}\" ]]; then echo \"REPO_URL=${repo_url}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${runner_labels}\" ]]; then echo \"RUNNER_LABELS=${runner_labels}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${poll_interval}\" ]]; then echo \"POLL_INTERVAL=${poll_interval}\" >> /etc/default/${SERVICE_NAME}; fi"
+if [[ -n \"${poll_interval}\" ]]; then echo \"POLL_INTERVAL=${poll_interval}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${snippets_dir}\" ]]; then echo \"SNIPPETS_DIR=${snippets_dir}\" >> /etc/default/${SERVICE_NAME}; fi"
 }
 
 write_systemd() {
