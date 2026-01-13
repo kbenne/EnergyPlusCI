@@ -55,8 +55,16 @@ def proxmox_get(path):
 
 def proxmox_post(path, data=None, files=None):
     url = f"{PROXMOX_URL}{path}"
-    resp = requests.post(url, headers=proxmox_headers(), data=data, files=files, verify=PROXMOX_VERIFY_SSL, timeout=30)
-    resp.raise_for_status()
+    resp = requests.post(
+        url,
+        headers=proxmox_headers(),
+        data=data,
+        files=files,
+        verify=PROXMOX_VERIFY_SSL,
+        timeout=30,
+    )
+    if not resp.ok:
+        raise RuntimeError(f"proxmox POST failed: {resp.status_code} {resp.text}")
     return resp.json()["data"]
 
 
