@@ -175,6 +175,11 @@ def configure_cloud_init(vmid, snippet_name):
     wait_for_task(upid)
 
 
+def update_cloud_init(vmid):
+    upid = proxmox_post(f"/nodes/{PROXMOX_NODE}/qemu/{vmid}/cloudinit")
+    wait_for_task(upid)
+
+
 def clone_and_start():
     template_id = find_template_vmid()
     vmid = next_vmid()
@@ -190,6 +195,7 @@ def clone_and_start():
     wait_for_task(upid)
 
     configure_cloud_init(vmid, snippet_name)
+    update_cloud_init(vmid)
     upid = proxmox_post(f"/nodes/{PROXMOX_NODE}/qemu/{vmid}/status/start")
     wait_for_task(upid)
 
