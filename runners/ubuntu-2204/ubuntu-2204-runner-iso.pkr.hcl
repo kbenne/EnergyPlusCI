@@ -80,6 +80,8 @@ source "proxmox-iso" "ubuntu2204" {
   vm_name    = var.new_template_name
   tags       = "ubuntu-2204_ci_template"
   qemu_agent = true
+  cloud_init = true
+  cloud_init_storage_pool = "local"
   boot_iso {
     type             = "scsi"
     iso_url          = "https://releases.ubuntu.com/22.04.5/ubuntu-22.04.5-live-server-amd64.iso"

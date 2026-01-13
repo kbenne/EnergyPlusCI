@@ -65,6 +65,7 @@ Notes:
 
 - `packer build runners/ubuntu-2204` loads all `*.pkr.hcl` files in that directory.
 - `*.auto.pkrvars.hcl` in that directory is automatically loaded.
+- The Packer template attaches a Cloud‑Init drive automatically (no manual UI steps).
 
 To run a single file explicitly:
 
