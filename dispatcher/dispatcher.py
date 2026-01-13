@@ -21,7 +21,7 @@ PROXMOX_TOKEN_ID = env("PROXMOX_TOKEN_ID", required=True)
 PROXMOX_TOKEN_SECRET = env("PROXMOX_TOKEN_SECRET", required=True)
 PROXMOX_STORAGE = env("PROXMOX_STORAGE", "local")
 PROXMOX_VERIFY_SSL = env("PROXMOX_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
-SNIPPETS_DIR = env("SNIPPETS_DIR")
+SNIPPETS_DIR = env("SNIPPETS_DIR", "/opt/dispatcher/snippets")
 
 TEMPLATE_NAME = env("TEMPLATE_NAME", "ubuntu-2204-runner-template")
 RUNNER_ID_START = int(env("RUNNER_ID_START", "200"))
