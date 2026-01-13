@@ -165,6 +165,7 @@ build {
     inline_shebang = "/usr/bin/env bash"
     inline = [
       "set -euxo pipefail",
+      "sudo rm -f /etc/cloud/cloud-init.disabled",
       "sudo cloud-init clean --logs || true",
       "sudo truncate -s 0 /etc/machine-id",
     ]
