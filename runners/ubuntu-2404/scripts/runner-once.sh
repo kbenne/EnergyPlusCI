@@ -25,6 +25,8 @@ runner_name="${4:-$(hostname)}"
 
 cd /opt/actions-runner
 
+export RUNNER_DISABLE_UPDATE=1
+
 cleanup() {
   if [[ -f .runner ]]; then
     ./config.sh remove --token "${reg_token}" || true
