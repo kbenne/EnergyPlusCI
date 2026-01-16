@@ -71,10 +71,22 @@ variable "iso_url" {
   default     = "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-live-server-amd64.iso"
 }
 
+variable "iso_file" {
+  type        = string
+  description = "Existing Proxmox ISO path (example: local:iso/ubuntu-24.04.1-live-server-amd64.iso). When set, iso_url is ignored."
+  default     = ""
+}
+
 variable "iso_checksum" {
   type        = string
   description = "ISO checksum (set to 'none' to disable)"
   default     = "none"
+}
+
+variable "iso_download_pve" {
+  type        = bool
+  description = "When true, Proxmox downloads the ISO directly; when false, Packer uploads it."
+  default     = true
 }
 #
 #variable "http_seed_ip" {
@@ -96,12 +108,14 @@ source "proxmox-iso" "ubuntu2404" {
   cloud_init_storage_pool = "local"
   boot_iso {
     type             = "scsi"
-    iso_url          = var.iso_url
+    iso_url          = var.iso_file != "" ? null : var.iso_url
+    iso_file         = var.iso_file != "" ? var.iso_file : null
     iso_checksum     = var.iso_checksum
     iso_storage_pool = "local"
-    iso_download_pve = true
+    iso_download_pve = var.iso_download_pve
     unmount          = true
   }
+  task_timeout = "45m"
 
   cores   = 2
   sockets = 1

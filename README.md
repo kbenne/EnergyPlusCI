@@ -53,7 +53,9 @@ openssl passwd -6 'password'
 Optional overrides:
 
 - `iso_url` (Ubuntu 24.04 ISO URL)
+- `iso_file` (existing Proxmox ISO path like `local:iso/ubuntu-24.04.1-live-server-amd64.iso`)
 - `iso_checksum` (set to `none` to skip checksum validation)
+- `iso_download_pve` (set to `false` to have Packer upload the ISO instead of Proxmox downloading it)
 
 ---
 
@@ -76,6 +78,12 @@ To run a single file explicitly:
 
 ```bash
 packer build runners/ubuntu-2404/ubuntu-2404-runner-iso.pkr.hcl
+```
+
+If you want to auto-detect an existing ISO in Proxmox and reuse it:
+
+```bash
+runners/ubuntu-2404/packer-build.sh
 ```
 
 ---

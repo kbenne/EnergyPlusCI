@@ -5,6 +5,7 @@ packer_cache/
 *.pkr.hcl.lock
 crash.log
 crash.*.log
+downloaded_iso_path/
 runners/ubuntu-2204/cloud-init/*.rendered
 runners/ubuntu-2204/cloud-init/*.yaml
 runners/ubuntu-2204/cloud-init/*.yml
