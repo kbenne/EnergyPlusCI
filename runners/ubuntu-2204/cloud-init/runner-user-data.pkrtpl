@@ -1,6 +1,0 @@
-#cloud-config
-hostname: ${runner_name}
-manage_etc_hosts: true
-
-runcmd:
-  - ["/opt/actions-runner/run-once.sh", "${repo_url}", "${registration_token}", "${runner_labels}", "${runner_name}"]

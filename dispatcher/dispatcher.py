@@ -23,21 +23,22 @@ PROXMOX_STORAGE = env("PROXMOX_STORAGE", "local")
 PROXMOX_VERIFY_SSL = env("PROXMOX_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
 SNIPPETS_DIR = env("SNIPPETS_DIR", "/opt/dispatcher/snippets")
 
-TEMPLATE_NAME = env("TEMPLATE_NAME", "ubuntu-2204-runner-template")
+TEMPLATE_NAME = env("TEMPLATE_NAME", "ubuntu-2404-runner-template")
 RUNNER_ID_START = int(env("RUNNER_ID_START", "200"))
 RUNNER_ID_END = int(env("RUNNER_ID_END", "299"))
 RUNNER_NAME_PREFIX = env("RUNNER_NAME_PREFIX", "energyplus-runner")
+RUNNER_USER = env("RUNNER_USER", "ci")
 
 REPO_OWNER = env("REPO_OWNER", "NREL")
 REPO_NAME = env("REPO_NAME", "EnergyPlus")
 REPO_URL = env("REPO_URL", f"https://github.com/{REPO_OWNER}/{REPO_NAME}")
-RUNNER_LABELS = env("RUNNER_LABELS", "energyplus,linux,x64,ubuntu-22.04")
+RUNNER_LABELS = env("RUNNER_LABELS", "energyplus,linux,x64,ubuntu-24.04")
 
 GITHUB_TOKEN = env("GITHUB_TOKEN", required=True)
 POLL_INTERVAL = int(env("POLL_INTERVAL", "15"))
 
 USER_DATA_TEMPLATE = env(
-    "USER_DATA_TEMPLATE", "runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl"
+    "USER_DATA_TEMPLATE", "runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl"
 )
 
 
@@ -147,6 +148,7 @@ def render_user_data(reg_token, runner_name):
         registration_token=reg_token,
         runner_labels=RUNNER_LABELS,
         runner_name=runner_name,
+        runner_user=RUNNER_USER,
     )
 
 

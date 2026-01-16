@@ -1,0 +1,11 @@
+#cloud-config
+hostname: ${runner_name}
+manage_etc_hosts: true
+
+runcmd:
+  - ["/usr/sbin/runuser", "-u", "${runner_user}", "--", "/opt/actions-runner/run-once.sh", "${repo_url}", "${registration_token}", "${runner_labels}", "${runner_name}"]
+
+power_state:
+  mode: poweroff
+  message: "Runner complete; powering off"
+  timeout: 30

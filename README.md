@@ -22,7 +22,7 @@ This repo assumes you have:
 
 ## Repo Layout
 
-- `runners/ubuntu-2204/` — Packer template + cloud-init templates for the Ubuntu 22.04 runner image
+- `runners/ubuntu-2404/` — Packer template + cloud-init templates for the Ubuntu 24.04 runner image
 - `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts
 
 ---
@@ -32,10 +32,10 @@ This repo assumes you have:
 Create a local vars file for the runner template:
 
 ```bash
-cp runners/ubuntu-2204/packer.pkrvars.hcl runners/ubuntu-2204/packer.auto.pkrvars.hcl
+cp runners/ubuntu-2404/packer.pkrvars.hcl runners/ubuntu-2404/packer.auto.pkrvars.hcl
 ```
 
-Edit `runners/ubuntu-2204/packer.auto.pkrvars.hcl` and set real values for:
+Edit `runners/ubuntu-2404/packer.auto.pkrvars.hcl` and set real values for:
 
 - `proxmox_url`
 - `proxmox_username`
@@ -50,6 +50,11 @@ Generate the password hash with:
 openssl passwd -6 'password'
 ```
 
+Optional overrides:
+
+- `iso_url` (Ubuntu 24.04 ISO URL)
+- `iso_checksum` (set to `none` to skip checksum validation)
+
 ---
 
 ## 2. Build the Runner VM Template
@@ -57,20 +62,20 @@ openssl passwd -6 'password'
 Run Packer from the runner directory:
 
 ```bash
-packer init runners/ubuntu-2204
-packer build runners/ubuntu-2204
+packer init runners/ubuntu-2404
+packer build runners/ubuntu-2404
 ```
 
 Notes:
 
-- `packer build runners/ubuntu-2204` loads all `*.pkr.hcl` files in that directory.
+- `packer build runners/ubuntu-2404` loads all `*.pkr.hcl` files in that directory.
 - `*.auto.pkrvars.hcl` in that directory is automatically loaded.
 - The Packer template attaches a Cloud‑Init drive automatically (no manual UI steps).
 
 To run a single file explicitly:
 
 ```bash
-packer build runners/ubuntu-2204/ubuntu-2204-runner-iso.pkr.hcl
+packer build runners/ubuntu-2404/ubuntu-2404-runner-iso.pkr.hcl
 ```
 
 ---
@@ -107,7 +112,7 @@ Files:
 ```
 dispatcher/dispatcher.py
 dispatcher/requirements.txt
-runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl
+runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl
 ```
 
 ### Required Environment Variables
@@ -125,16 +130,17 @@ GITHUB_TOKEN
 ```
 PROXMOX_STORAGE=local
 PROXMOX_VERIFY_SSL=false
-TEMPLATE_NAME=ubuntu-2204-runner-template
+TEMPLATE_NAME=ubuntu-2404-runner-template
 RUNNER_ID_START=200
 RUNNER_ID_END=299
 RUNNER_NAME_PREFIX=energyplus-runner
+RUNNER_USER=ci
 REPO_OWNER=NREL
 REPO_NAME=EnergyPlus
 REPO_URL=https://github.com/NREL/EnergyPlus
-RUNNER_LABELS=energyplus,linux,x64,ubuntu-22.04
+RUNNER_LABELS=energyplus,linux,x64,ubuntu-24.04
 POLL_INTERVAL=15
-USER_DATA_TEMPLATE=runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl
+USER_DATA_TEMPLATE=runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl
 ```
 
 ### GitHub Token (Fine-Grained, Recommended)
@@ -194,10 +200,12 @@ Notes:
 - The dispatcher runs as a systemd service inside the container; if you used the bootstrap script, it is already enabled.
 - If you already have the template tarball, set `CT_TEMPLATE_FILE=/path/to/debian-12-standard_12.2-1_amd64.tar.zst` to upload it directly.
 - To check status inside the LXC: `systemctl status dispatcher`
+- To follow logs from the Proxmox host: `sudo pct exec <ctid> -- journalctl -u dispatcher -f`
 - If you want console login access, set `CT_ROOT_PASSWORD` before running the script.
 - Ensure `PROXMOX_URL` is resolvable from inside the LXC (use an IP if needed).
 - Use `PROXMOX_STORAGE=local` for snippets; `local-lvm` does not support snippets.
 - Snippets are written via a bind mount at `/opt/dispatcher/snippets` by default; set `SNIPPETS_DIR` only if you want a different path.
+- Runner lifecycle: cloud-init powers off the VM after the job completes; the dispatcher deletes stopped runner VMs on the next poll.
 
 ---
 ## 7. Secrets and Tokens

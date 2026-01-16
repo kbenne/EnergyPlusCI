@@ -10,7 +10,7 @@ template VM.
 Use the runner user-data template:
 
 ```
-runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl
+runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl
 ```
 
 In normal operation the dispatcher renders this template automatically. For manual
@@ -36,5 +36,5 @@ Registration tokens are short-lived secrets issued by GitHub to enroll a runner.
 Default runner labels:
 
 ```
-energyplus,linux,x64,ubuntu-22.04
+energyplus,linux,x64,ubuntu-24.04
 ```

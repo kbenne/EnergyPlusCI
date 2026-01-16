@@ -2,7 +2,7 @@
 autoinstall:
   version: 1
   identity:
-    hostname: ubuntu-2204-runner
+    hostname: ubuntu-2404-runner
     username: ${ssh_username}
     password: ${ssh_password_hash}
   ssh:

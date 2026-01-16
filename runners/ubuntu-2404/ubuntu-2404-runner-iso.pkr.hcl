@@ -28,7 +28,7 @@ variable "proxmox_node" {
 
 variable "new_template_name" {
   type        = string
-  default     = "ubuntu-2204-runner-template"
+  default     = "ubuntu-2404-runner-template"
 }
 
 variable "ssh_username" {
@@ -50,7 +50,7 @@ variable "ssh_password_hash" {
 variable "runner_version" {
   type        = string
   description = "GitHub Actions runner version"
-  default     = "2.316.0"
+  default     = "2.327.0"
 }
 
 variable "runner_arch" {
@@ -64,13 +64,25 @@ variable "http_bind_address" {
   description = "IP on the Packer host to bind the autoinstall HTTP server to"
   default     = "0.0.0.0"
 }
+
+variable "iso_url" {
+  type        = string
+  description = "Ubuntu 24.04 live server ISO URL"
+  default     = "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-live-server-amd64.iso"
+}
+
+variable "iso_checksum" {
+  type        = string
+  description = "ISO checksum (set to 'none' to disable)"
+  default     = "none"
+}
 #
 #variable "http_seed_ip" {
 #  type        = string
 #  description = "IP on the Packer host that the VM can reach for autoinstall seed"
 #}
 
-source "proxmox-iso" "ubuntu2204" {
+source "proxmox-iso" "ubuntu2404" {
   proxmox_url              = var.proxmox_url
   username                 = var.proxmox_username
   token                    = var.proxmox_token
@@ -78,14 +90,14 @@ source "proxmox-iso" "ubuntu2204" {
   insecure_skip_tls_verify = true
 
   vm_name    = var.new_template_name
-  tags       = "ubuntu-2204_ci_template"
+  tags       = "ubuntu-2404_ci_template"
   qemu_agent = true
   cloud_init = true
   cloud_init_storage_pool = "local"
   boot_iso {
     type             = "scsi"
-    iso_url          = "https://releases.ubuntu.com/22.04.5/ubuntu-22.04.5-live-server-amd64.iso"
-    iso_checksum     = "sha256:9bc6028870aef3f74f4e16b900008179e78b130e6b0b9a140635434a46aa98b0"
+    iso_url          = var.iso_url
+    iso_checksum     = var.iso_checksum
     iso_storage_pool = "local"
     iso_download_pve = true
     unmount          = true
@@ -137,8 +149,8 @@ source "proxmox-iso" "ubuntu2204" {
 }
 
 build {
-  name    = "ubuntu-2204-runner-template-from-iso"
-  sources = ["source.proxmox-iso.ubuntu2204"]
+  name    = "ubuntu-2404-runner-template-from-iso"
+  sources = ["source.proxmox-iso.ubuntu2404"]
 
   provisioner "file" {
     source      = "${abspath(path.root)}/scripts/runner-once.sh"
@@ -151,6 +163,7 @@ build {
       "set -euxo pipefail",
       "sudo apt-get update",
       "sudo apt-get install -y cloud-init qemu-guest-agent curl ca-certificates git build-essential python3",
+      "sudo tee /etc/netplan/01-proxmox-dhcp.yaml >/dev/null <<'EOF'\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    all:\n      match:\n        name: \"en*\"\n      dhcp4: true\n      dhcp6: false\nEOF",
       "sudo snap install --classic cmake --channel=4.0",
       "sudo mkdir -p /opt/actions-runner",
       "sudo chown -R ${var.ssh_username}:${var.ssh_username} /opt/actions-runner",

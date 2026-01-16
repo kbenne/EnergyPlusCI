@@ -35,12 +35,12 @@ Rule of thumb:
 1. In the Proxmox web interface, select the **node**
 2. Click **local** → **ISO Images**
 3. Click **Upload**
-4. Upload an Ubuntu Server ISO (e.g., Ubuntu 22.04 LTS)
+4. Upload an Ubuntu Server ISO (e.g., Ubuntu 24.04 LTS)
 
 ### Option B: Upload via `scp`
 
 ```bash
-scp ubuntu-22.04.4-live-server-amd64.iso \
+scp ubuntu-24.04.1-live-server-amd64.iso \
     root@<proxmox-ip>:/var/lib/vz/template/iso/
 ```
 
@@ -49,7 +49,7 @@ Or download directly on the Proxmox host:
 ```bash
 ssh root@<proxmox-ip>
 cd /var/lib/vz/template/iso
-wget https://releases.ubuntu.com/22.04/ubuntu-22.04.4-live-server-amd64.iso
+wget https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-live-server-amd64.iso
 ```
 
 ---
@@ -60,8 +60,8 @@ Use the Proxmox web UI to create a baseline VM before automating with Packer.
 
 Recommended settings:
 
-- Name: `ubuntu-22.04-runner-base`
-- ISO image: Ubuntu Server 22.04 LTS (from `local`)
+- Name: `ubuntu-24.04-runner-base`
+- ISO image: Ubuntu Server 24.04 LTS (from `local`)
 - Machine: `q35`
 - BIOS: `OVMF (UEFI)`
 - EFI disk: enabled
