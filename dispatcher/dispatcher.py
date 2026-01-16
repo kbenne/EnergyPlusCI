@@ -70,6 +70,19 @@ def proxmox_post(path, data=None, files=None):
     return resp.json()["data"]
 
 
+def proxmox_delete(path):
+    url = f"{PROXMOX_URL}{path}"
+    resp = requests.delete(
+        url,
+        headers=proxmox_headers(),
+        verify=PROXMOX_VERIFY_SSL,
+        timeout=30,
+    )
+    if not resp.ok:
+        raise RuntimeError(f"proxmox DELETE failed: {resp.status_code} {resp.text}")
+    return resp.json()["data"]
+
+
 def wait_for_task(upid):
     while True:
         status = proxmox_get(f"/nodes/{PROXMOX_NODE}/tasks/{upid}/status")
@@ -106,7 +119,7 @@ def delete_vm(vmid):
         wait_for_task(upid)
     except requests.HTTPError:
         pass
-    upid = proxmox_post(f"/nodes/{PROXMOX_NODE}/qemu/{vmid}/delete")
+    upid = proxmox_delete(f"/nodes/{PROXMOX_NODE}/qemu/{vmid}")
     wait_for_task(upid)
 
 
