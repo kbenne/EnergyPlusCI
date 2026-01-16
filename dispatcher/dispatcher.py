@@ -178,7 +178,14 @@ def configure_cloud_init(vmid, snippet_name):
 
 
 def update_cloud_init(vmid):
-    upid = proxmox_post(f"/nodes/{PROXMOX_NODE}/qemu/{vmid}/cloudinit")
+    try:
+        upid = proxmox_post(f"/nodes/{PROXMOX_NODE}/qemu/{vmid}/cloudinit")
+    except RuntimeError as exc:
+        message = str(exc)
+        if "501" in message and "/cloudinit" in message:
+            print("warning: proxmox cloudinit endpoint unavailable; skipping update")
+            return
+        raise
     wait_for_task(upid)
 
 
