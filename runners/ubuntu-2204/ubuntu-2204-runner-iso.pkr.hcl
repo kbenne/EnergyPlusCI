@@ -176,7 +176,10 @@ build {
     inline = [
       "set -euxo pipefail",
       "sudo apt-get update",
-      "sudo apt-get install -y cloud-init qemu-guest-agent curl ca-certificates git build-essential python3 gcc-13 g++-13",
+      "sudo apt-get install -y cloud-init qemu-guest-agent curl ca-certificates git build-essential python3 software-properties-common",
+      "sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test",
+      "sudo apt-get update",
+      "sudo apt-get install -y gcc-13 g++-13",
       "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100",
       "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100",
       "sudo tee /etc/netplan/01-proxmox-dhcp.yaml >/dev/null <<'EOF'\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    all:\n      match:\n        name: \"en*\"\n      dhcp4: true\n      dhcp6: false\nEOF",
