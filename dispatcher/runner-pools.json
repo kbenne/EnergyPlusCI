@@ -23,7 +23,7 @@
       "vmid_end": 259,
       "runner_name_prefix": "energyplus-2204-runner",
       "runner_user": "ci",
-      "user_data_template": "runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl",
+      "user_data_template": "runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl",
       "storage": "local",
       "max_runners": 2
     }

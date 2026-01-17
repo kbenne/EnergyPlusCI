@@ -23,19 +23,25 @@ This repo assumes you have:
 ## Repo Layout
 
 - `runners/ubuntu-2404/` — Packer template + cloud-init templates for the Ubuntu 24.04 runner image
+- `runners/ubuntu-2204/` — Packer template + cloud-init templates for the Ubuntu 22.04 runner image
 - `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts
 
 ---
 
 ## 1. Configure Runner Build Variables
 
-Create a local vars file for the runner template:
+Create a local vars file for the runner template you want to build:
 
 ```bash
 cp runners/ubuntu-2404/packer.pkrvars.hcl runners/ubuntu-2404/packer.auto.pkrvars.hcl
 ```
+Or for Ubuntu 22.04:
 
-Edit `runners/ubuntu-2404/packer.auto.pkrvars.hcl` and set real values for:
+```bash
+cp runners/ubuntu-2204/packer.pkrvars.hcl runners/ubuntu-2204/packer.auto.pkrvars.hcl
+```
+
+Edit the `packer.auto.pkrvars.hcl` you just created and set real values for:
 
 - `proxmox_url`
 - `proxmox_username`
@@ -61,11 +67,17 @@ Optional overrides:
 
 ## 2. Build the Runner VM Template
 
-Run Packer from the runner directory:
+Run Packer from the runner directory you want to build:
 
 ```bash
 packer init runners/ubuntu-2404
 packer build runners/ubuntu-2404
+```
+Or for Ubuntu 22.04:
+
+```bash
+packer init runners/ubuntu-2204
+packer build runners/ubuntu-2204
 ```
 
 Notes:
@@ -78,6 +90,11 @@ To run a single file explicitly:
 
 ```bash
 packer build runners/ubuntu-2404/ubuntu-2404-runner-iso.pkr.hcl
+```
+Or for Ubuntu 22.04:
+
+```bash
+packer build runners/ubuntu-2204/ubuntu-2204-runner-iso.pkr.hcl
 ```
 
 If you want to auto-detect an existing ISO in Proxmox and reuse it:

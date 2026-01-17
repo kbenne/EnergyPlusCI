@@ -1,0 +1,22 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-2204-runner
+    username: ${ssh_username}
+    password: ${ssh_password_hash}
+  ssh:
+    install-server: true
+    allow-pw: true
+  packages:
+    - qemu-guest-agent
+  late-commands:
+    - curtin in-target -- systemctl start qemu-guest-agent.service || true
+    - curtin in-target -- sh -c 'echo "${ssh_username} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${ssh_username}'
+    - curtin in-target -- chmod 0440 /etc/sudoers.d/${ssh_username}
+  locale: en_US
+  keyboard:
+    layout: us
+  storage:
+    layout:
+      name: direct
