@@ -115,6 +115,15 @@ The dispatcher runs in an LXC container and uses the Proxmox API + GitHub API to
 
 It currently enforces **one runner at a time** and deletes stopped runner VMs.
 
+### Proxmox Clustering (No HA)
+
+You can run a single dispatcher against a Proxmox cluster to spread runners across nodes without enabling HA:
+
+- Create a basic Proxmox cluster (`pvecm create` on the first node, `pvecm add` on others).
+- Keep storage local per node if you do not need live migration.
+- Run **one** dispatcher instance to avoid double-provisioning.
+- Use per-node `PROXMOX_NODE` targeting (today the dispatcher targets one node; multi-node support can be added by defining per-node runner pools).
+
 Files:
 
 ```
