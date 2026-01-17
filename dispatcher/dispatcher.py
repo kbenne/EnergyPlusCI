@@ -22,7 +22,7 @@ PROXMOX_TOKEN_SECRET = env("PROXMOX_TOKEN_SECRET", required=True)
 PROXMOX_STORAGE = env("PROXMOX_STORAGE", "local")
 PROXMOX_VERIFY_SSL = env("PROXMOX_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
 SNIPPETS_DIR = env("SNIPPETS_DIR", "/opt/dispatcher/snippets")
-RUNNER_POOLS_CONFIG = env("RUNNER_POOLS_CONFIG")
+RUNNER_POOLS_CONFIG = env("RUNNER_POOLS_CONFIG", "dispatcher/runner-pools.json")
 MAX_TOTAL_RUNNERS = int(env("MAX_TOTAL_RUNNERS", "0"))
 
 TEMPLATE_NAME = env("TEMPLATE_NAME", "ubuntu-2404-runner-template")
@@ -45,30 +45,15 @@ USER_DATA_TEMPLATE = env(
 
 
 def load_pools():
-    if RUNNER_POOLS_CONFIG:
-        with open(RUNNER_POOLS_CONFIG, "r", encoding="utf-8") as handle:
-            config = json.load(handle)
-        max_total = int(config.get("max_total_runners", 0))
-        pools = [normalize_pool(pool) for pool in config.get("pools", [])]
-        if not pools:
-            raise SystemExit("RUNNER_POOLS_CONFIG has no pools defined")
-        if MAX_TOTAL_RUNNERS > 0:
-            max_total = MAX_TOTAL_RUNNERS
-        return max_total, pools
-
-    pool = {
-        "name": RUNNER_NAME_PREFIX,
-        "node": PROXMOX_NODE,
-        "template": TEMPLATE_NAME,
-        "labels": RUNNER_LABELS.split(","),
-        "vmid_start": RUNNER_ID_START,
-        "vmid_end": RUNNER_ID_END,
-        "runner_name_prefix": RUNNER_NAME_PREFIX,
-        "runner_user": RUNNER_USER,
-        "user_data_template": USER_DATA_TEMPLATE,
-        "storage": PROXMOX_STORAGE,
-    }
-    return MAX_TOTAL_RUNNERS, [normalize_pool(pool)]
+    with open(RUNNER_POOLS_CONFIG, "r", encoding="utf-8") as handle:
+        config = json.load(handle)
+    max_total = int(config.get("max_total_runners", 0))
+    pools = [normalize_pool(pool) for pool in config.get("pools", [])]
+    if not pools:
+        raise SystemExit("RUNNER_POOLS_CONFIG has no pools defined")
+    if MAX_TOTAL_RUNNERS > 0:
+        max_total = MAX_TOTAL_RUNNERS
+    return max_total, pools
 
 
 def normalize_pool(pool):

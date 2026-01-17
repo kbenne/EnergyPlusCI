@@ -117,11 +117,14 @@ It deletes stopped runner VMs and can cap concurrency via pool limits.
 
 ### Runner Pools (Multiple OS Templates)
 
-The dispatcher can schedule multiple runner pools (for example Ubuntu 22.04 + 24.04) based on job `runs-on` labels. To enable pools, set `RUNNER_POOLS_CONFIG` to a JSON file like:
+The dispatcher can schedule multiple runner pools (for example Ubuntu 22.04 + 24.04) based on job `runs-on` labels. The default config lives at:
 
 ```
-dispatcher/runner-pools.json.example
+dispatcher/runner-pools.json
 ```
+
+Edit this file to match your Proxmox templates, labels, and VMID ranges.
+If you need an alternate path, override with `RUNNER_POOLS_CONFIG`.
 
 Each job is matched to a pool whose `labels` are a superset of the job labels (GitHub `runs-on`).
 Use `max_total_runners` in the JSON (or `MAX_TOTAL_RUNNERS`) to cap concurrency.
@@ -134,7 +137,7 @@ You can run a single dispatcher against a Proxmox cluster to spread runners acro
 - Create a basic Proxmox cluster (`pvecm create` on the first node, `pvecm add` on others).
 - Keep storage local per node if you do not need live migration.
 - Run **one** dispatcher instance to avoid double-provisioning.
-- Use per-node `PROXMOX_NODE` targeting (today the dispatcher targets one node; multi-node support can be added by defining per-node runner pools).
+- Use per-node runner pools to target specific nodes when spreading load.
 - For multi-node clusters, prefer snippet uploads (unset `SNIPPETS_DIR`) unless the snippets directory is on shared storage.
 
 Files:
@@ -160,19 +163,11 @@ GITHUB_TOKEN
 ```
 PROXMOX_STORAGE=local
 PROXMOX_VERIFY_SSL=false
-RUNNER_POOLS_CONFIG=dispatcher/runner-pools.json
 MAX_TOTAL_RUNNERS=0
-TEMPLATE_NAME=ubuntu-2404-runner-template
-RUNNER_ID_START=200
-RUNNER_ID_END=299
-RUNNER_NAME_PREFIX=energyplus-runner
-RUNNER_USER=ci
 REPO_OWNER=NREL
 REPO_NAME=EnergyPlus
 REPO_URL=https://github.com/NREL/EnergyPlus
-RUNNER_LABELS=energyplus,linux,x64,ubuntu-24.04
 POLL_INTERVAL=15
-USER_DATA_TEMPLATE=runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl
 ```
 
 ### GitHub Token (Fine-Grained, Recommended)
