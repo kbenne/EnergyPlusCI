@@ -1,0 +1,31 @@
+{
+  "max_total_runners": 4,
+  "pools": [
+    {
+      "name": "ubuntu-2404",
+      "node": "proxmox",
+      "template": "ubuntu-2404-runner-template",
+      "labels": ["energyplus", "linux", "x64", "ubuntu-24.04"],
+      "vmid_start": 200,
+      "vmid_end": 229,
+      "runner_name_prefix": "energyplus-2404-runner",
+      "runner_user": "ci",
+      "user_data_template": "runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl",
+      "storage": "local",
+      "max_runners": 2
+    },
+    {
+      "name": "ubuntu-2204",
+      "node": "proxmox",
+      "template": "ubuntu-2204-runner-template",
+      "labels": ["energyplus", "linux", "x64", "ubuntu-22.04"],
+      "vmid_start": 230,
+      "vmid_end": 259,
+      "runner_name_prefix": "energyplus-2204-runner",
+      "runner_user": "ci",
+      "user_data_template": "runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl",
+      "storage": "local",
+      "max_runners": 2
+    }
+  ]
+}

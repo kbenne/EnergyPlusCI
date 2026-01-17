@@ -113,7 +113,19 @@ The dispatcher runs in an LXC container and uses the Proxmox API + GitHub API to
 4. Upload the user-data snippet to Proxmox
 5. Clone the VM template and start a runner
 
-It currently enforces **one runner at a time** and deletes stopped runner VMs.
+It deletes stopped runner VMs and can cap concurrency via pool limits.
+
+### Runner Pools (Multiple OS Templates)
+
+The dispatcher can schedule multiple runner pools (for example Ubuntu 22.04 + 24.04) based on job `runs-on` labels. To enable pools, set `RUNNER_POOLS_CONFIG` to a JSON file like:
+
+```
+dispatcher/runner-pools.json.example
+```
+
+Each job is matched to a pool whose `labels` are a superset of the job labels (GitHub `runs-on`).
+Use `max_total_runners` in the JSON (or `MAX_TOTAL_RUNNERS`) to cap concurrency.
+Ensure each pool's `template` exists in Proxmox (for example `ubuntu-2204-runner-template`).
 
 ### Proxmox Clustering (No HA)
 
@@ -123,6 +135,7 @@ You can run a single dispatcher against a Proxmox cluster to spread runners acro
 - Keep storage local per node if you do not need live migration.
 - Run **one** dispatcher instance to avoid double-provisioning.
 - Use per-node `PROXMOX_NODE` targeting (today the dispatcher targets one node; multi-node support can be added by defining per-node runner pools).
+- For multi-node clusters, prefer snippet uploads (unset `SNIPPETS_DIR`) unless the snippets directory is on shared storage.
 
 Files:
 
@@ -147,6 +160,8 @@ GITHUB_TOKEN
 ```
 PROXMOX_STORAGE=local
 PROXMOX_VERIFY_SSL=false
+RUNNER_POOLS_CONFIG=dispatcher/runner-pools.json
+MAX_TOTAL_RUNNERS=0
 TEMPLATE_NAME=ubuntu-2404-runner-template
 RUNNER_ID_START=200
 RUNNER_ID_END=299
