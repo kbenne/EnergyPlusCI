@@ -113,8 +113,10 @@ push_files() {
   pct exec "${CT_ID}" -- mkdir -p /opt/dispatcher
   pct push "${CT_ID}" "${DISPATCHER_DIR}/dispatcher/dispatcher.py" /opt/dispatcher/dispatcher.py
   pct push "${CT_ID}" "${DISPATCHER_DIR}/dispatcher/requirements.txt" /opt/dispatcher/requirements.txt
+  pct push "${CT_ID}" "${DISPATCHER_DIR}/dispatcher/runner-pools.json" /opt/dispatcher/runner-pools.json
   pct exec "${CT_ID}" -- mkdir -p /opt/dispatcher/cloud-init
-  pct push "${CT_ID}" "${DISPATCHER_DIR}/runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl" /opt/dispatcher/cloud-init/runner-user-data.pkrtpl
+  pct push "${CT_ID}" "${DISPATCHER_DIR}/runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl" /opt/dispatcher/cloud-init/runner-user-data-2404.pkrtpl
+  pct push "${CT_ID}" "${DISPATCHER_DIR}/runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl" /opt/dispatcher/cloud-init/runner-user-data-2204.pkrtpl
 }
 
 setup_venv() {

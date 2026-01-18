@@ -48,10 +48,12 @@ USER_DATA_TEMPLATE = env(
 
 
 def load_pools():
-    with open(RUNNER_POOLS_CONFIG, "r", encoding="utf-8") as handle:
+    config_path = os.path.abspath(RUNNER_POOLS_CONFIG)
+    config_dir = os.path.dirname(config_path)
+    with open(config_path, "r", encoding="utf-8") as handle:
         config = json.load(handle)
     max_total = int(config.get("max_total_runners", 0))
-    pools = [normalize_pool(pool) for pool in config.get("pools", [])]
+    pools = [normalize_pool(pool, config_dir) for pool in config.get("pools", [])]
     if not pools:
         raise SystemExit("RUNNER_POOLS_CONFIG has no pools defined")
     if MAX_TOTAL_RUNNERS > 0:
@@ -59,7 +61,7 @@ def load_pools():
     return max_total, pools
 
 
-def normalize_pool(pool):
+def normalize_pool(pool, config_dir):
     normalized = dict(pool)
     normalized.setdefault("node", PROXMOX_NODE)
     normalized.setdefault("template", TEMPLATE_NAME)
@@ -68,7 +70,10 @@ def normalize_pool(pool):
     normalized.setdefault("vmid_end", RUNNER_ID_END)
     normalized.setdefault("runner_name_prefix", RUNNER_NAME_PREFIX)
     normalized.setdefault("runner_user", RUNNER_USER)
-    normalized.setdefault("user_data_template", USER_DATA_TEMPLATE)
+    user_data_template = normalized.get("user_data_template", USER_DATA_TEMPLATE)
+    if not os.path.isabs(user_data_template):
+        user_data_template = os.path.join(config_dir, user_data_template)
+    normalized["user_data_template"] = user_data_template
     normalized.setdefault("storage", PROXMOX_STORAGE)
     normalized.setdefault("max_runners", 0)
 

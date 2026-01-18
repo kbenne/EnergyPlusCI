@@ -140,7 +140,7 @@ The dispatcher can schedule multiple runner pools (for example Ubuntu 22.04 + 24
 dispatcher/runner-pools.json
 ```
 
-Edit this file to match your Proxmox templates, labels, and VMID ranges.
+Edit this file to match your Proxmox templates, labels, and VMID ranges. The default runner user-data templates are copied into `/opt/dispatcher/cloud-init/` during LXC bootstrap.
 If you need an alternate path, override with `RUNNER_POOLS_CONFIG`.
 
 Each job is matched to a pool whose `labels` are a superset of the job labels (GitHub `runs-on`).
