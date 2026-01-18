@@ -24,6 +24,7 @@ This repo assumes you have:
 
 - `runners/ubuntu-2404/` — Packer template + cloud-init templates for the Ubuntu 24.04 runner image
 - `runners/ubuntu-2204/` — Packer template + cloud-init templates for the Ubuntu 22.04 runner image
+- `runners/windows-2022/` — Packer template + unattended install assets for Windows Server 2022 runners
 - `dispatcher/` — autoscaler/dispatcher and LXC bootstrap scripts
 
 ---
@@ -39,6 +40,11 @@ Or for Ubuntu 22.04:
 
 ```bash
 cp runners/ubuntu-2204/packer.pkrvars.hcl runners/ubuntu-2204/packer.auto.pkrvars.hcl
+```
+Or for Windows Server 2022:
+
+```bash
+cp runners/windows-2022/packer.pkrvars.hcl runners/windows-2022/packer.auto.pkrvars.hcl
 ```
 
 Edit the `packer.auto.pkrvars.hcl` you just created and set real values for:
@@ -79,6 +85,12 @@ Or for Ubuntu 22.04:
 packer init runners/ubuntu-2204
 packer build runners/ubuntu-2204
 ```
+Or for Windows Server 2022:
+
+```bash
+packer init runners/windows-2022
+packer build runners/windows-2022
+```
 
 Notes:
 
@@ -96,6 +108,17 @@ Or for Ubuntu 22.04:
 ```bash
 packer build runners/ubuntu-2204/ubuntu-2204-runner-iso.pkr.hcl
 ```
+Or for Windows Server 2022:
+
+```bash
+packer build runners/windows-2022/windows-2022-runner-iso.pkr.hcl
+```
+
+Windows notes:
+
+- Provide a Windows Server 2022 ISO on Proxmox storage and set `iso_file`.
+- Provide the virtio driver ISO (Fedora virtio-win) and set `virtio_iso_file`.
+- The unattended install uses `winrm_password` as the local Administrator password.
 
 If you want to auto-detect an existing ISO in Proxmox and reuse it:
 
