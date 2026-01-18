@@ -75,8 +75,9 @@ ensure_template() {
 
 create_container() {
   if pct status "${CT_ID}" >/dev/null 2>&1; then
-    echo "CT ${CT_ID} already exists; skipping create." >&2
-    return 0
+    echo "CT ${CT_ID} already exists; destroying before recreate." >&2
+    pct stop "${CT_ID}" || true
+    pct destroy "${CT_ID}"
   fi
   pct create "${CT_ID}" "local:vztmpl/${CT_TEMPLATE}" \
     --hostname "${CT_HOSTNAME}" \
