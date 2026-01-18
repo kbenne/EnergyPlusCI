@@ -22,7 +22,10 @@ PROXMOX_TOKEN_SECRET = env("PROXMOX_TOKEN_SECRET", required=True)
 PROXMOX_STORAGE = env("PROXMOX_STORAGE", "local")
 PROXMOX_VERIFY_SSL = env("PROXMOX_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
 SNIPPETS_DIR = env("SNIPPETS_DIR", "/opt/dispatcher/snippets")
-RUNNER_POOLS_CONFIG = env("RUNNER_POOLS_CONFIG", "dispatcher/runner-pools.json")
+DISPATCHER_DIR = os.path.dirname(os.path.abspath(__file__))
+RUNNER_POOLS_CONFIG = env(
+    "RUNNER_POOLS_CONFIG", os.path.join(DISPATCHER_DIR, "runner-pools.json")
+)
 MAX_TOTAL_RUNNERS = int(env("MAX_TOTAL_RUNNERS", "0"))
 
 TEMPLATE_NAME = env("TEMPLATE_NAME", "ubuntu-2404-runner-template")
