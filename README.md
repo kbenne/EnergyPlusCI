@@ -273,6 +273,12 @@ To follow dispatcher logs from inside the container:
 journalctl -u dispatcher.service -f
 ```
 
+From the Proxmox host without entering the container:
+
+```
+sudo pct exec <ctid> -- journalctl -u dispatcher.service -f
+```
+
 Notes:
 
 - The script will download the Debian 12 LXC template if missing.
