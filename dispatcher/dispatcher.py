@@ -27,6 +27,7 @@ RUNNER_POOLS_CONFIG = env(
     "RUNNER_POOLS_CONFIG", os.path.join(DISPATCHER_DIR, "runner-pools.json")
 )
 MAX_TOTAL_RUNNERS = int(env("MAX_TOTAL_RUNNERS", "0"))
+DISABLE_CLEANUP = env("DISABLE_CLEANUP", "false").lower() in ("1", "true", "yes")
 
 TEMPLATE_NAME = env("TEMPLATE_NAME", "ubuntu-2404-runner-template")
 RUNNER_ID_START = int(env("RUNNER_ID_START", "200"))
@@ -356,7 +357,8 @@ def main():
     max_total, pools = load_pools()
     while True:
         vms_by_node = collect_node_vms(pools)
-        cleanup_stopped_runners(pools, vms_by_node)
+        if not DISABLE_CLEANUP:
+            cleanup_stopped_runners(pools, vms_by_node)
 
         queued_jobs = list_queued_jobs()
         if not queued_jobs:
