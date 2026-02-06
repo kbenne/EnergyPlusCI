@@ -261,6 +261,18 @@ chmod +x dispatcher/scripts/bootstrap-dispatcher-lxc.sh
 sudo dispatcher/scripts/bootstrap-dispatcher-lxc.sh
 ```
 
+To access the dispatcher container:
+
+- From the Proxmox host, enter the container shell: `sudo pct enter <ctid>`
+- Inside the container, you can set a root password with `chpasswd` (e.g. `echo root:NEWPASSWORD | chpasswd`)
+- You can also set the initial root password by exporting `CT_ROOT_PASSWORD` before running the bootstrap script
+
+To follow dispatcher logs from inside the container:
+
+```
+journalctl -u dispatcher.service -f
+```
+
 Notes:
 
 - The script will download the Debian 12 LXC template if missing.
