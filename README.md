@@ -293,6 +293,23 @@ If a runner VM exits quickly, you can keep it around by setting `DISABLE_CLEANUP
 
 You can also review the Proxmox task log for the VM start/stop events in the UI (Task History).
 
+### Runner Bootstrap Flow (Linux)
+
+1. The dispatcher fills in the placeholders in `runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl` (or 22.04) with a short-lived GitHub registration token.
+2. That cloud-init user-data calls `/opt/actions-runner/run-once.sh` (copied into the template by Packer).
+3. `run-once.sh` registers the runner (ephemeral) and launches the GitHub runner `run.sh`.
+
+Key scripts:
+
+- `runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl` (or 22.04) — cloud-init entrypoint.
+- `runners/ubuntu-2404/scripts/runner-once.sh` (or 22.04) — registration + launch wrapper.
+- `/opt/actions-runner/run.sh` — GitHub Actions runner entrypoint (downloaded from GitHub as part of the runner tarball; it runs the job steps defined in the `.github/workflows/*.yml` files).
+
+Log locations:
+
+- Cloud-init output: `/var/log/cloud-init-output.log` (includes output from `run-once.sh` and the runner process it launches).
+- Runner logs: `/opt/actions-runner/_diag/*.log` (most detailed runner diagnostics).
+
 Notes:
 
 - The script will download the Debian 12 LXC template if missing.
