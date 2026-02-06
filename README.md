@@ -261,7 +261,7 @@ chmod +x dispatcher/scripts/bootstrap-dispatcher-lxc.sh
 sudo dispatcher/scripts/bootstrap-dispatcher-lxc.sh
 ```
 
-To access the dispatcher container:
+To access the dispatcher container (the CTID is the number shown next to the container in the Proxmox UI):
 
 - From the Proxmox host, enter the container shell: `sudo pct enter <ctid>`
 - Inside the container, you can set a root password with `chpasswd` (e.g. `echo root:NEWPASSWORD | chpasswd`)
