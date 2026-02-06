@@ -205,6 +205,7 @@ PROXMOX_STORAGE=local
 PROXMOX_VERIFY_SSL=false
 MAX_TOTAL_RUNNERS=0
 DISABLE_CLEANUP=false
+PAUSE_ON_STOPPED=false
 REPO_OWNER=NREL
 REPO_NAME=EnergyPlus
 REPO_URL=https://github.com/NREL/EnergyPlus
@@ -282,7 +283,7 @@ sudo pct exec <ctid> -- journalctl -u dispatcher.service -f
 
 ### Debugging Runner VMs
 
-If a runner VM exits quickly, you can keep it around by setting `DISABLE_CLEANUP=true` in the dispatcher env, then restart the dispatcher. From the Proxmox UI, open the runner VM console and inspect logs:
+If a runner VM exits quickly, you can keep it around by setting `DISABLE_CLEANUP=true` in the dispatcher env, then restart the dispatcher. To avoid repeated provisioning while stopped runners exist, set `PAUSE_ON_STOPPED=true` as well. From the Proxmox UI, open the runner VM console and inspect logs:
 
 - Linux runner:
   - `/var/log/cloud-init-output.log`

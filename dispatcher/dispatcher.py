@@ -28,6 +28,7 @@ RUNNER_POOLS_CONFIG = env(
 )
 MAX_TOTAL_RUNNERS = int(env("MAX_TOTAL_RUNNERS", "0"))
 DISABLE_CLEANUP = env("DISABLE_CLEANUP", "false").lower() in ("1", "true", "yes")
+PAUSE_ON_STOPPED = env("PAUSE_ON_STOPPED", "false").lower() in ("1", "true", "yes")
 
 TEMPLATE_NAME = env("TEMPLATE_NAME", "ubuntu-2404-runner-template")
 RUNNER_ID_START = int(env("RUNNER_ID_START", "200"))
@@ -327,6 +328,17 @@ def cleanup_stopped_runners(pools, vms_by_node):
                 delete_vm(node, int(vm["vmid"]))
 
 
+def any_stopped_runners(pools, vms_by_node):
+    for pool in pools:
+        node = pool["node"]
+        prefixes = {pool["runner_name_prefix"]}
+        runners = find_runner_vms(vms_by_node.get(node, []), prefixes)
+        for vm in runners:
+            if vm.get("status") == "stopped":
+                return True
+    return False
+
+
 def pool_active_count(pool, vms):
     prefixes = {pool["runner_name_prefix"]}
     runners = find_runner_vms(vms, prefixes)
@@ -359,6 +371,9 @@ def main():
         vms_by_node = collect_node_vms(pools)
         if not DISABLE_CLEANUP:
             cleanup_stopped_runners(pools, vms_by_node)
+        elif PAUSE_ON_STOPPED and any_stopped_runners(pools, vms_by_node):
+            time.sleep(POLL_INTERVAL)
+            continue
 
         queued_jobs = list_queued_jobs()
         if not queued_jobs:
