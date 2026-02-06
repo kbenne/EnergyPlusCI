@@ -65,6 +65,12 @@ variable "http_bind_address" {
   default     = "0.0.0.0"
 }
 
+variable "cloud_init_storage_pool" {
+  type        = string
+  description = "Proxmox storage pool for the cloud-init drive"
+  default     = "local-lvm"
+}
+
 variable "iso_url" {
   type        = string
   description = "Ubuntu 24.04 live server ISO URL"
@@ -105,7 +111,7 @@ source "proxmox-iso" "ubuntu2404" {
   tags       = "ubuntu-2404_ci_template"
   qemu_agent = true
   cloud_init = true
-  cloud_init_storage_pool = "local"
+  cloud_init_storage_pool = var.cloud_init_storage_pool
   boot_iso {
     type             = "scsi"
     iso_url          = var.iso_file != "" ? null : var.iso_url

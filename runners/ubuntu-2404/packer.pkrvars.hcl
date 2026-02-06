@@ -11,3 +11,4 @@ ssh_password_hash = "REPLACE_ME"
 # iso_file        = "local:iso/ubuntu-24.04.1-live-server-amd64.iso"
 # iso_checksum    = "none"
 # iso_download_pve = false
+# cloud_init_storage_pool = "local-lvm"
