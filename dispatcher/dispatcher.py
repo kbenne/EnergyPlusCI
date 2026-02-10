@@ -36,7 +36,7 @@ RUNNER_ID_END = int(env("RUNNER_ID_END", "299"))
 RUNNER_NAME_PREFIX = env("RUNNER_NAME_PREFIX", "energyplus-runner")
 RUNNER_USER = env("RUNNER_USER", "ci")
 
-REPO_OWNER = env("REPO_OWNER", "NREL")
+REPO_OWNER = env("REPO_OWNER", "NatLabRockies")
 REPO_NAME = env("REPO_NAME", "EnergyPlus")
 REPO_URL = env("REPO_URL", f"https://github.com/{REPO_OWNER}/{REPO_NAME}")
 RUNNER_LABELS = env("RUNNER_LABELS", "energyplus,linux,x64,ubuntu-24.04")
