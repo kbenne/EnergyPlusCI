@@ -5,18 +5,32 @@ autoinstall:
     hostname: ubuntu-2404-runner
     username: ${ssh_username}
     password: ${ssh_password_hash}
+
   ssh:
     install-server: true
     allow-pw: true
+
+  network:
+    version: 2
+    ethernets:
+      all:
+        match:
+          name: "*"
+        dhcp4: true
+        dhcp6: false
+
   packages:
     - qemu-guest-agent
+
   late-commands:
-    - curtin in-target -- systemctl start qemu-guest-agent.service || true
-    - curtin in-target -- sh -c 'echo "${ssh_username} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${ssh_username}'
+    - curtin in-target -- systemctl enable --now qemu-guest-agent.service || true
+    - curtin in-target -- sh -c 'echo "${ssh_username} ALL=(ALL) NOPASSWD:ALL" | tee /etc/sudoers.d/${ssh_username} >/dev/null'
     - curtin in-target -- chmod 0440 /etc/sudoers.d/${ssh_username}
+
   locale: en_US
   keyboard:
     layout: us
+
   storage:
     layout:
       name: direct

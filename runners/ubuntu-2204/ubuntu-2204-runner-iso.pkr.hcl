@@ -117,9 +117,9 @@ source "proxmox-iso" "ubuntu2204" {
   }
   task_timeout = "45m"
 
-  cores   = 2
+  cores   = 4
   sockets = 1
-  memory  = 8192
+  memory  = 4096
 
   scsi_controller = "virtio-scsi-pci"
 
@@ -171,19 +171,34 @@ build {
     destination = "/tmp/runner-once.sh"
   }
 
+  # Shell provisioner #1: base tooling + GCC/G++/gfortran + netplan + cmake + actions-runner
   provisioner "shell" {
     inline_shebang = "/usr/bin/env bash"
     inline = [
       "set -euxo pipefail",
+
       "sudo apt-get update",
-      "sudo apt-get install -y cloud-init qemu-guest-agent curl ca-certificates git build-essential python3 software-properties-common",
+      # ADD patchelf here
+      "sudo apt-get install -y cloud-init qemu-guest-agent curl ca-certificates git build-essential python3 software-properties-common patchelf",
+
       "sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test",
       "sudo apt-get update",
-      "sudo apt-get install -y gcc-13 g++-13",
+
+      # GCC toolchain (adds Fortran compiler too)
+      "sudo apt-get install -y gcc-13 g++-13 gfortran-13",
       "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100",
       "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100",
+      "sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-13 100",
+
+      # Tell CMake/Autotools where to find Fortran compiler
+      "echo 'export FC=/usr/bin/gfortran' | sudo tee /etc/profile.d/fortran.sh >/dev/null",
+      "sudo chmod 0644 /etc/profile.d/fortran.sh",
+
+      # Netplan DHCP config for Proxmox NICs
       "sudo tee /etc/netplan/01-proxmox-dhcp.yaml >/dev/null <<'EOF'\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    all:\n      match:\n        name: \"en*\"\n      dhcp4: true\n      dhcp6: false\nEOF",
+
       "sudo snap install --classic cmake --channel=4.0",
+
       "sudo mkdir -p /opt/actions-runner",
       "sudo chown -R ${var.ssh_username}:${var.ssh_username} /opt/actions-runner",
       "cd /opt/actions-runner",
@@ -191,17 +206,59 @@ build {
       "tar -xzf actions-runner-linux-${var.runner_arch}-${var.runner_version}.tar.gz",
       "rm -f actions-runner-linux-${var.runner_arch}-${var.runner_version}.tar.gz",
       "sudo /opt/actions-runner/bin/installdependencies.sh",
-      "sudo install -m 0755 /tmp/runner-once.sh /opt/actions-runner/run-once.sh"
+      "sudo install -m 0755 /tmp/runner-once.sh /opt/actions-runner/run-once.sh",
+
+      # Quick sanity checks
+      "patchelf --version",
+      "gfortran --version",
+      "command -v gfortran",
+      "bash -lc 'echo FC=$FC; command -v \"$FC\" || true'"
     ]
   }
 
+  # Shell provisioner #2: pyenv + Python 3.12.3
   provisioner "shell" {
     inline_shebang = "/usr/bin/env bash"
     inline = [
       "set -euxo pipefail",
+
+      "sudo apt-get update",
+      "sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev curl llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev",
+
+      "sudo -u ${var.ssh_username} -H bash -lc 'test -d ~/.pyenv || git clone --depth 1 https://github.com/pyenv/pyenv.git ~/.pyenv'",
+      "sudo -u ${var.ssh_username} -H bash -lc 'grep -q \"PYENV_ROOT\" ~/.bashrc || cat >> ~/.bashrc <<\"EOF\"\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PATH\"\neval \"$(pyenv init -)\"\nEOF'",
+      "sudo -u ${var.ssh_username} -H bash -lc 'grep -q \"PYENV_ROOT\" ~/.profile || cat >> ~/.profile <<\"EOF\"\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PATH\"\nEOF'",
+
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PATH\"; eval \"$(pyenv init -)\"; pyenv install -s 3.12.3'",
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PATH\"; eval \"$(pyenv init -)\"; pyenv global 3.12.3; pyenv rehash'",
+
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PATH\"; eval \"$(pyenv init -)\"; python -m pip install --upgrade pip'",
+      "sudo -u ${var.ssh_username} -H bash -lc 'python -m pip --version'",
+
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PATH\"; eval \"$(pyenv init -)\"; python --version; which python'"
+    ]
+  }
+
+  # Shell provisioner #3: cleanup / template hygiene
+  provisioner "shell" {
+    inline_shebang = "/usr/bin/env bash"
+    inline = [
+      "set -euxo pipefail",
+
+      "sudo rm -f /tmp/runner-once.sh",
+
+      "sudo apt-get -y autoremove --purge",
+      "sudo apt-get -y clean",
+      "sudo rm -rf /var/lib/apt/lists/*",
+
       "sudo rm -f /etc/cloud/cloud-init.disabled",
       "sudo cloud-init clean --logs || true",
       "sudo truncate -s 0 /etc/machine-id",
+      "if [ -f /var/lib/dbus/machine-id ]; then sudo truncate -s 0 /var/lib/dbus/machine-id; fi",
+
+      "sudo rm -f /root/.bash_history || true",
+      "sudo -u ${var.ssh_username} -H bash -lc 'rm -f ~/.bash_history || true'",
+      "sudo find /var/log -type f -exec truncate -s 0 {} + || true"
     ]
   }
 }
