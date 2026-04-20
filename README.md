@@ -210,6 +210,7 @@ REPO_OWNER=NREL
 REPO_NAME=EnergyPlus
 REPO_URL=https://github.com/NREL/EnergyPlus
 POLL_INTERVAL=15
+DEBUG_LOGGING=false
 ```
 
 ### GitHub Token (Fine-Grained, Recommended)
@@ -280,6 +281,33 @@ From the Proxmox host without entering the container:
 ```
 sudo pct exec <ctid> -- journalctl -u dispatcher.service -f
 ```
+
+### Dispatcher Logging
+
+By default, the dispatcher logs startup configuration, runner pool configuration, warnings, capacity-blocked scale decisions, unmatched queued-job labels, and runner VM start events.
+
+For short-term autoscaling diagnosis, enable verbose GitHub discovery logs:
+
+```bash
+echo DEBUG_LOGGING=true >> /etc/default/dispatcher
+systemctl restart dispatcher
+journalctl -u dispatcher.service -f
+```
+
+Turn verbose logging back off after collecting the needed state:
+
+```bash
+sed -i 's/^DEBUG_LOGGING=.*/DEBUG_LOGGING=false/' /etc/default/dispatcher
+systemctl restart dispatcher
+```
+
+Verbose logging runs once per dispatcher poll interval (`POLL_INTERVAL`, default 15 seconds), so it is too noisy for normal operation. The most useful diagnostic lines are:
+
+- `github queued discovery runs=0 queued_jobs=0` — the GitHub API query did not return any queued workflow runs to the dispatcher.
+- `queued job did not match any pool ... labels=[...]` — the dispatcher saw a queued job, but its `runs-on` labels did not match any configured runner pool.
+- `scale state needed_counts=... active_by_pool=...` — the dispatcher calculated how many queued jobs need each pool and how many runner VMs are already active.
+- `pool scale decision ... reason=capacity_exhausted` — a queued job matched a pool, but `max_total_runners` or the pool's `max_runners` prevented another VM from starting.
+- `starting runner ...` and `started runner ...` — the dispatcher decided to clone and boot a runner VM.
 
 ### Debugging Runner VMs
 

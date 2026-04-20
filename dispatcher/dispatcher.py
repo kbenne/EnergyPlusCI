@@ -15,6 +15,15 @@ def env(name, default=None, required=False):
     return value
 
 
+DEBUG_LOGGING = env("DEBUG_LOGGING", "false").lower() in ("1", "true", "yes")
+
+
+def log(message, debug=False):
+    if debug and not DEBUG_LOGGING:
+        return
+    print(message, flush=True)
+
+
 PROXMOX_URL = env("PROXMOX_URL", required=True).rstrip("/")
 PROXMOX_NODE = env("PROXMOX_NODE", required=True)
 PROXMOX_TOKEN_ID = env("PROXMOX_TOKEN_ID", required=True)
@@ -193,6 +202,7 @@ def list_queued_jobs():
     queued_jobs = []
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/actions/runs"
     page = 1
+    total_runs = 0
     while True:
         resp = requests.get(
             url,
@@ -202,13 +212,30 @@ def list_queued_jobs():
         )
         resp.raise_for_status()
         runs = resp.json().get("workflow_runs", [])
+        total_runs += len(runs)
+        log(f"github queued workflow runs page={page} count={len(runs)}", debug=True)
         if not runs:
             break
         for run in runs:
-            queued_jobs.extend(list_jobs_for_run(run["id"]))
+            run_jobs = list_jobs_for_run(run["id"])
+            queued_jobs.extend(run_jobs)
+            log(
+                "github queued run "
+                f"id={run.get('id')} "
+                f"name={run.get('name')} "
+                f"status={run.get('status')} "
+                f"event={run.get('event')} "
+                f"branch={run.get('head_branch')} "
+                f"queued_jobs={len(run_jobs)}",
+                debug=True,
+            )
         if len(runs) < 100:
             break
         page += 1
+    log(
+        f"github queued discovery runs={total_runs} queued_jobs={len(queued_jobs)}",
+        debug=True,
+    )
     return queued_jobs
 
 
@@ -216,6 +243,8 @@ def list_jobs_for_run(run_id):
     jobs = []
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/actions/runs/{run_id}/jobs"
     page = 1
+    total_jobs = 0
+    status_counts = {}
     while True:
         resp = requests.get(
             url,
@@ -225,12 +254,20 @@ def list_jobs_for_run(run_id):
         )
         resp.raise_for_status()
         payload = resp.json().get("jobs", [])
+        total_jobs += len(payload)
         for job in payload:
+            status = job.get("status", "unknown")
+            status_counts[status] = status_counts.get(status, 0) + 1
             if job.get("status") == "queued":
                 jobs.append(job)
         if len(payload) < 100:
             break
         page += 1
+    log(
+        f"github jobs run_id={run_id} total_jobs={total_jobs} "
+        f"queued_jobs={len(jobs)} status_counts={status_counts}",
+        debug=True,
+    )
     return jobs
 
 
@@ -284,7 +321,7 @@ def update_cloud_init(node, vmid):
     except RuntimeError as exc:
         message = str(exc)
         if "501" in message and "/cloudinit" in message:
-            print("warning: proxmox cloudinit endpoint unavailable; skipping update")
+            log("warning: proxmox cloudinit endpoint unavailable; skipping update")
             return
         raise
     wait_for_task(upid)
@@ -295,6 +332,10 @@ def clone_and_start(pool, existing_vms):
     template_id = find_template_vmid(node, pool["template"])
     vmid = next_vmid(pool, existing_vms)
     runner_name = f"{pool['runner_name_prefix']}-{vmid}"
+    log(
+        f"starting runner pool={pool['name']} node={node} "
+        f"template={pool['template']} vmid={vmid} name={runner_name}"
+    )
 
     reg_token = registration_token()
     user_data = render_user_data(
@@ -315,6 +356,7 @@ def clone_and_start(pool, existing_vms):
     update_cloud_init(node, vmid)
     upid = proxmox_post(f"/nodes/{node}/qemu/{vmid}/status/start")
     wait_for_task(upid)
+    log(f"started runner pool={pool['name']} vmid={vmid} name={runner_name}")
     return vmid
 
 
@@ -367,16 +409,31 @@ def collect_node_vms(pools):
 
 def main():
     max_total, pools = load_pools()
+    log(
+        f"dispatcher starting repo={REPO_OWNER}/{REPO_NAME} "
+        f"repo_url={REPO_URL} max_total={max_total} "
+        f"poll_interval={POLL_INTERVAL}"
+    )
+    for pool in pools:
+        log(
+            f"pool name={pool['name']} node={pool['node']} "
+            f"template={pool['template']} labels={pool['labels']} "
+            f"match_labels={pool['match_labels']} "
+            f"max_runners={pool.get('max_runners', 0)} "
+            f"vmid_range={pool['vmid_start']}-{pool['vmid_end']}"
+        )
     while True:
         vms_by_node = collect_node_vms(pools)
         if not DISABLE_CLEANUP:
             cleanup_stopped_runners(pools, vms_by_node)
         elif PAUSE_ON_STOPPED and any_stopped_runners(pools, vms_by_node):
+            log("stopped runner exists and PAUSE_ON_STOPPED=true; pausing scale up")
             time.sleep(POLL_INTERVAL)
             continue
 
         queued_jobs = list_queued_jobs()
         if not queued_jobs:
+            log("no queued jobs found by dispatcher", debug=True)
             time.sleep(POLL_INTERVAL)
             continue
 
@@ -386,6 +443,21 @@ def main():
             pool = choose_pool(pools, labels)
             if pool:
                 needed_counts[pool["name"]] += 1
+                log(
+                    "queued job matched "
+                    f"job_id={job.get('id')} "
+                    f"name={job.get('name')} "
+                    f"labels={labels} "
+                    f"pool={pool['name']}",
+                    debug=True,
+                )
+            else:
+                log(
+                    "queued job did not match any pool "
+                    f"job_id={job.get('id')} "
+                    f"name={job.get('name')} "
+                    f"labels={labels}"
+                )
 
         total_active = 0
         active_by_pool = {}
@@ -397,12 +469,24 @@ def main():
 
         total_capacity = max_total if max_total > 0 else None
         available_total = None if total_capacity is None else max(total_capacity - total_active, 0)
+        log(
+            f"scale state needed_counts={needed_counts} "
+            f"active_by_pool={active_by_pool} total_active={total_active} "
+            f"total_capacity={total_capacity} available_total={available_total}",
+            debug=True,
+        )
 
         for pool in pools:
             need = needed_counts.get(pool["name"], 0)
             active = active_by_pool.get(pool["name"], 0)
             to_start = max(0, need - active)
+            requested_start = to_start
             if to_start == 0:
+                log(
+                    f"pool scale decision pool={pool['name']} need={need} "
+                    f"active={active} to_start=0 reason=no_additional_need",
+                    debug=True,
+                )
                 continue
 
             pool_cap = pool.get("max_runners", 0)
@@ -412,7 +496,19 @@ def main():
                 to_start = min(to_start, available_total)
 
             if to_start <= 0:
+                log(
+                    f"pool scale decision pool={pool['name']} need={need} "
+                    f"active={active} requested_start={requested_start} "
+                    f"pool_cap={pool_cap} available_total={available_total} "
+                    f"to_start=0 reason=capacity_exhausted"
+                )
                 continue
+            log(
+                f"pool scale decision pool={pool['name']} need={need} "
+                f"active={active} requested_start={requested_start} "
+                f"pool_cap={pool_cap} available_total={available_total} "
+                f"to_start={to_start}"
+            )
 
             node_vms = vms_by_node.get(pool["node"], [])
             existing = {int(vm["vmid"]) for vm in node_vms}
