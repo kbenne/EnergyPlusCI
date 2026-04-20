@@ -119,7 +119,7 @@ source "proxmox-iso" "ubuntu2204" {
 
   cores   = 4
   sockets = 1
-  memory  = 4096
+  memory  = 8192
 
   scsi_controller = "virtio-scsi-pci"
 

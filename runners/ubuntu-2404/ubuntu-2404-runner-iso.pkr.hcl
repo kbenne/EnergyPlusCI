@@ -118,9 +118,9 @@ source "proxmox-iso" "ubuntu2404" {
   }
   task_timeout = "45m"
 
-  cores   = 4
+  cores   = 8
   sockets = 1
-  memory  = 4096
+  memory  = 16384
 
   scsi_controller = "virtio-scsi-pci"
 
