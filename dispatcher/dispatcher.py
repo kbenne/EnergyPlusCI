@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+import json
 import os
-import time
 import tempfile
+import time
 from string import Template
 
 import requests
-import json
 
 
 def env(name, default=None, required=False):
@@ -125,9 +125,9 @@ def proxmox_delete(path):
     return resp.json()["data"]
 
 
-def wait_for_task(upid):
+def wait_for_task(node, upid):
     while True:
-        status = proxmox_get(f"/nodes/{PROXMOX_NODE}/tasks/{upid}/status")
+        status = proxmox_get(f"/nodes/{node}/tasks/{upid}/status")
         if status.get("status") == "stopped":
             if status.get("exitstatus") not in (None, "OK"):
                 raise RuntimeError(f"proxmox task failed: {status}")
@@ -155,14 +155,16 @@ def find_runner_vms(vms, prefixes):
     return runners
 
 
-def delete_vm(node, vmid):
-    try:
-        upid = proxmox_post(f"/nodes/{node}/qemu/{vmid}/status/stop")
-        wait_for_task(upid)
-    except requests.HTTPError:
-        pass
+def delete_vm(node, vmid, stop_first=True):
+    if stop_first:
+        try:
+            upid = proxmox_post(f"/nodes/{node}/qemu/{vmid}/status/stop")
+            wait_for_task(node, upid)
+        except RuntimeError as exc:
+            if "not running" not in str(exc).lower():
+                raise
     upid = proxmox_delete(f"/nodes/{node}/qemu/{vmid}")
-    wait_for_task(upid)
+    wait_for_task(node, upid)
 
 
 def next_vmid(pool, existing):
@@ -262,18 +264,34 @@ def upload_snippet(contents, snippet_name, node, storage):
     with tempfile.NamedTemporaryFile("w", delete=False) as handle:
         handle.write(contents)
         temp_path = handle.name
-    with open(temp_path, "rb") as handle:
-        files = {"filename": (snippet_name, handle, "text/plain")}
-        data = {"content": "snippets"}
-        upid = proxmox_post(f"/nodes/{node}/storage/{storage}/upload", data=data, files=files)
-    wait_for_task(upid)
+    try:
+        with open(temp_path, "rb") as handle:
+            files = {"filename": (snippet_name, handle, "text/plain")}
+            data = {"content": "snippets"}
+            upid = proxmox_post(f"/nodes/{node}/storage/{storage}/upload", data=data, files=files)
+        wait_for_task(node, upid)
+    finally:
+        try:
+            os.unlink(temp_path)
+        except FileNotFoundError:
+            pass
+
+
+def delete_snippet(snippet_name):
+    if not SNIPPETS_DIR:
+        return
+    snippet_path = os.path.join(SNIPPETS_DIR, snippet_name)
+    try:
+        os.unlink(snippet_path)
+    except FileNotFoundError:
+        pass
 
 
 def configure_cloud_init(vmid, snippet_name, node, storage):
     cicustom = f"user={storage}:snippets/{snippet_name}"
     data = {"cicustom": cicustom}
     upid = proxmox_post(f"/nodes/{node}/qemu/{vmid}/config", data=data)
-    wait_for_task(upid)
+    wait_for_task(node, upid)
 
 
 def update_cloud_init(node, vmid):
@@ -285,7 +303,7 @@ def update_cloud_init(node, vmid):
             print("warning: proxmox cloudinit endpoint unavailable; skipping update")
             return
         raise
-    wait_for_task(upid)
+    wait_for_task(node, upid)
 
 
 def clone_and_start(pool, existing_vms):
@@ -307,12 +325,12 @@ def clone_and_start(pool, existing_vms):
 
     data = {"newid": vmid, "name": runner_name, "full": 0, "target": node}
     upid = proxmox_post(f"/nodes/{node}/qemu/{template_id}/clone", data=data)
-    wait_for_task(upid)
+    wait_for_task(node, upid)
 
     configure_cloud_init(vmid, snippet_name, node, pool["storage"])
     update_cloud_init(node, vmid)
     upid = proxmox_post(f"/nodes/{node}/qemu/{vmid}/status/start")
-    wait_for_task(upid)
+    wait_for_task(node, upid)
     return vmid
 
 
@@ -323,7 +341,12 @@ def cleanup_stopped_runners(pools, vms_by_node):
         runners = find_runner_vms(vms_by_node.get(node, []), prefixes)
         for vm in runners:
             if vm.get("status") == "stopped":
-                delete_vm(node, int(vm["vmid"]))
+                print(
+                    f"deleting stopped runner {vm.get('name', vm['vmid'])} on {node}",
+                    flush=True,
+                )
+                delete_vm(node, int(vm["vmid"]), stop_first=False)
+                delete_snippet(f"{vm.get('name', vm['vmid'])}.yaml")
 
 
 def pool_active_count(pool, vms):

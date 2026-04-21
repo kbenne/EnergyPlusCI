@@ -15,3 +15,5 @@ runners/ubuntu-2404/cloud-init/*.yml
 dispatcher/.env
 dispatcher/.venv
 dispatcher/dispatcher.env
+
+*__pycache__*

@@ -27,13 +27,8 @@ cd /opt/actions-runner
 
 export RUNNER_DISABLE_UPDATE=1
 
-cleanup() {
-  if [[ -f .runner ]]; then
-    ./config.sh remove --token "${reg_token}" || true
-  fi
-}
-trap cleanup EXIT
-
+# This VM is discarded after a single job. Avoid config.sh remove here:
+# it requires a separate remove token and can block shutdown if reused.
 ./config.sh \
   --unattended \
   --replace \
