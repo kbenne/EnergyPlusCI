@@ -1,5 +1,5 @@
 {
-  "max_total_runners": 7,
+  "max_total_runners": 2,
   "pools": [
     {
       "name": "ubuntu-2404",
@@ -11,8 +11,7 @@
       "runner_name_prefix": "energyplus-2404-runner",
       "runner_user": "packer",
       "user_data_template": "cloud-init/runner-user-data-2404.pkrtpl",
-      "storage": "local",
-      "max_runners": 7
+      "storage": "local"
     }
   ]
 }
