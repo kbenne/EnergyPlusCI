@@ -179,7 +179,8 @@ GITHUB_TOKEN
 
 ```
 PROXMOX_STORAGE=local
-PROXMOX_VERIFY_SSL=false
+PROXMOX_VERIFY_SSL=true|false|/path/to/proxmox-ca.pem
+PROXMOX_CA_CERT=/path/on/proxmox-host/to/proxmox-ca.pem
 MAX_TOTAL_RUNNERS=0
 REPO_OWNER=NREL
 REPO_NAME=EnergyPlus
@@ -224,7 +225,7 @@ source dispatcher/dispatcher.env
 If you prefer not to use an env file, you can still export manually:
 
 ```bash
-export PROXMOX_URL="http://10.1.1.158:8006/api2/json"
+export PROXMOX_URL="https://proxmox.lan:8006/api2/json"
 export PROXMOX_NODE="proxmox"
 export PROXMOX_TOKEN_ID="root@pam!packer"
 export PROXMOX_TOKEN_SECRET="REDACTED"
@@ -246,8 +247,11 @@ Notes:
 - To check status inside the LXC: `systemctl status dispatcher`
 - To follow logs from the Proxmox host: `sudo pct exec <ctid> -- journalctl -u dispatcher -f`
 - If you want console login access, set `CT_ROOT_PASSWORD` before running the script.
-- Ensure `PROXMOX_URL` is resolvable from inside the LXC (use an IP if needed).
+- Ensure `PROXMOX_URL` is resolvable from inside the LXC. Prefer a DNS name that matches the Proxmox TLS certificate instead of a raw IP.
 - Use `PROXMOX_STORAGE=local` for snippets; `local-lvm` does not support snippets.
+- Set `PROXMOX_VERIFY_SSL=true` when the dispatcher container already trusts the Proxmox certificate chain.
+- If Proxmox uses a private or self-signed CA, set `PROXMOX_CA_CERT=/path/to/ca.pem` before running the bootstrap script. The script copies that CA file into the LXC and configures the dispatcher to verify against it.
+- `PROXMOX_VERIFY_SSL=false` disables certificate validation and will trigger `urllib3` insecure-request warnings; keep it as a temporary fallback only.
 - Snippets are written via a bind mount at `/opt/dispatcher/snippets` by default; set `SNIPPETS_DIR` only if you want a different path.
 - Runner lifecycle: cloud-init powers off the VM after the job completes; the dispatcher deletes stopped runner VMs on the next poll.
 

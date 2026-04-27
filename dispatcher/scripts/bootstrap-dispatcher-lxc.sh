@@ -29,6 +29,7 @@ PROXMOX_TOKEN_ID="${PROXMOX_TOKEN_ID:-}"
 PROXMOX_TOKEN_SECRET="${PROXMOX_TOKEN_SECRET:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 PROXMOX_STORAGE="${PROXMOX_STORAGE:-local}"
+PROXMOX_CA_CERT="${PROXMOX_CA_CERT:-}"
 
 if [[ -f "${ENV_FILE}" ]]; then
   # shellcheck source=/dev/null
@@ -42,6 +43,11 @@ fi
 
 if [[ ! -d "${DISPATCHER_DIR}/dispatcher" || ! -d "${DISPATCHER_DIR}/runners/ubuntu-2404/cloud-init" ]]; then
   echo "DISPATCHER_DIR must point to the repo root (contains dispatcher/ and runners/ubuntu-2404/)" >&2
+  exit 1
+fi
+
+if [[ -n "${PROXMOX_CA_CERT}" && ! -f "${PROXMOX_CA_CERT}" ]]; then
+  echo "PROXMOX_CA_CERT not found: ${PROXMOX_CA_CERT}" >&2
   exit 1
 fi
 
@@ -118,6 +124,10 @@ push_files() {
   pct exec "${CT_ID}" -- mkdir -p /opt/dispatcher/cloud-init
   pct push "${CT_ID}" "${DISPATCHER_DIR}/runners/ubuntu-2404/cloud-init/runner-user-data.pkrtpl" /opt/dispatcher/cloud-init/runner-user-data-2404.pkrtpl
   pct push "${CT_ID}" "${DISPATCHER_DIR}/runners/ubuntu-2204/cloud-init/runner-user-data.pkrtpl" /opt/dispatcher/cloud-init/runner-user-data-2204.pkrtpl
+  if [[ -n "${PROXMOX_CA_CERT}" ]]; then
+    pct exec "${CT_ID}" -- mkdir -p /opt/dispatcher/certs
+    pct push "${CT_ID}" "${PROXMOX_CA_CERT}" "/opt/dispatcher/certs/$(basename "${PROXMOX_CA_CERT}")"
+  fi
 }
 
 setup_venv() {
@@ -128,6 +138,7 @@ write_env_file() {
   local user_data_template="${USER_DATA_TEMPLATE:-}"
   local proxmox_storage="${PROXMOX_STORAGE:-}"
   local proxmox_verify_ssl="${PROXMOX_VERIFY_SSL:-}"
+  local proxmox_ca_cert="${PROXMOX_CA_CERT:-}"
   local template_name="${TEMPLATE_NAME:-}"
   local runner_id_start="${RUNNER_ID_START:-}"
   local runner_id_end="${RUNNER_ID_END:-}"
@@ -146,7 +157,7 @@ if [[ -n \"${PROXMOX_TOKEN_SECRET:-}\" ]]; then echo \"PROXMOX_TOKEN_SECRET=${PR
 if [[ -n \"${GITHUB_TOKEN:-}\" ]]; then echo \"GITHUB_TOKEN=${GITHUB_TOKEN}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${user_data_template}\" ]]; then echo \"USER_DATA_TEMPLATE=${user_data_template}\" >> /etc/default/${SERVICE_NAME}; else echo \"USER_DATA_TEMPLATE=/opt/dispatcher/cloud-init/runner-user-data.pkrtpl\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${proxmox_storage}\" ]]; then echo \"PROXMOX_STORAGE=${proxmox_storage}\" >> /etc/default/${SERVICE_NAME}; fi
-if [[ -n \"${proxmox_verify_ssl}\" ]]; then echo \"PROXMOX_VERIFY_SSL=${proxmox_verify_ssl}\" >> /etc/default/${SERVICE_NAME}; fi
+if [[ -n \"${proxmox_ca_cert}\" ]]; then echo \"PROXMOX_VERIFY_SSL=/opt/dispatcher/certs/$(basename "${proxmox_ca_cert}")\" >> /etc/default/${SERVICE_NAME}; elif [[ -n \"${proxmox_verify_ssl}\" ]]; then echo \"PROXMOX_VERIFY_SSL=${proxmox_verify_ssl}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${template_name}\" ]]; then echo \"TEMPLATE_NAME=${template_name}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${runner_id_start}\" ]]; then echo \"RUNNER_ID_START=${runner_id_start}\" >> /etc/default/${SERVICE_NAME}; fi
 if [[ -n \"${runner_id_end}\" ]]; then echo \"RUNNER_ID_END=${runner_id_end}\" >> /etc/default/${SERVICE_NAME}; fi

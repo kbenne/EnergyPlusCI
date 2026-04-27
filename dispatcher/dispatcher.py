@@ -15,12 +15,27 @@ def env(name, default=None, required=False):
     return value
 
 
+def parse_verify_setting(name, default="false"):
+    value = env(name, default)
+    if value is None:
+        return default
+    normalized = value.strip()
+    if not normalized:
+        return False
+    lowered = normalized.lower()
+    if lowered in ("1", "true", "yes", "on"):
+        return True
+    if lowered in ("0", "false", "no", "off"):
+        return False
+    return normalized
+
+
 PROXMOX_URL = env("PROXMOX_URL", required=True).rstrip("/")
 PROXMOX_NODE = env("PROXMOX_NODE", required=True)
 PROXMOX_TOKEN_ID = env("PROXMOX_TOKEN_ID", required=True)
 PROXMOX_TOKEN_SECRET = env("PROXMOX_TOKEN_SECRET", required=True)
 PROXMOX_STORAGE = env("PROXMOX_STORAGE", "local")
-PROXMOX_VERIFY_SSL = env("PROXMOX_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
+PROXMOX_VERIFY_SSL = parse_verify_setting("PROXMOX_VERIFY_SSL", "false")
 SNIPPETS_DIR = env("SNIPPETS_DIR", "/opt/dispatcher/snippets")
 DISPATCHER_DIR = os.path.dirname(os.path.abspath(__file__))
 RUNNER_POOLS_CONFIG = env(
