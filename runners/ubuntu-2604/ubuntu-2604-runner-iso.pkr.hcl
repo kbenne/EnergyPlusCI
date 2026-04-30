@@ -27,8 +27,8 @@ variable "proxmox_node" {
 }
 
 variable "new_template_name" {
-  type        = string
-  default     = "ubuntu-2604-runner-template"
+  type    = string
+  default = "ubuntu-2604-runner-template"
 }
 
 variable "ssh_username" {
@@ -102,10 +102,10 @@ source "proxmox-iso" "ubuntu2604" {
   node                     = var.proxmox_node
   insecure_skip_tls_verify = true
 
-  vm_name    = var.new_template_name
-  tags       = "ubuntu-2604_ci_template"
-  qemu_agent = true
-  cloud_init = true
+  vm_name                 = var.new_template_name
+  tags                    = "ubuntu-2604_ci_template"
+  qemu_agent              = true
+  cloud_init              = true
   cloud_init_storage_pool = "local"
   boot_iso {
     type             = "scsi"
@@ -217,36 +217,36 @@ build {
     ]
   }
 
-# Shell provisioner #2: pyenv + Python 3.12.3
-provisioner "shell" {
-  inline_shebang = "/usr/bin/env bash"
-  inline = [
-    "set -euxo pipefail",
+  # Shell provisioner #2: pyenv + Python 3.12.3
+  provisioner "shell" {
+    inline_shebang = "/usr/bin/env bash"
+    inline = [
+      "set -euxo pipefail",
 
-    "sudo apt-get update",
-    "sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev curl llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev",
+      "sudo apt-get update",
+      "sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev curl llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev",
 
-    # Install pyenv
-    "sudo -u ${var.ssh_username} -H bash -lc 'test -d ~/.pyenv || git clone --depth 1 https://github.com/pyenv/pyenv.git ~/.pyenv'",
+      # Install pyenv
+      "sudo -u ${var.ssh_username} -H bash -lc 'test -d ~/.pyenv || git clone --depth 1 https://github.com/pyenv/pyenv.git ~/.pyenv'",
 
-    # Persist pyenv env for interactive shells
-    "sudo -u ${var.ssh_username} -H bash -lc 'grep -q \"PYENV_ROOT\" ~/.bashrc || cat >> ~/.bashrc <<\"EOF\"\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"\neval \"$(pyenv init -)\"\nEOF'",
+      # Persist pyenv env for interactive shells
+      "sudo -u ${var.ssh_username} -H bash -lc 'grep -q \"PYENV_ROOT\" ~/.bashrc || cat >> ~/.bashrc <<\"EOF\"\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"\neval \"$(pyenv init -)\"\nEOF'",
 
-    # Persist pyenv env for login shells / non-interactive invocations that source .profile
-    "sudo -u ${var.ssh_username} -H bash -lc 'grep -q \"PYENV_ROOT\" ~/.profile || cat >> ~/.profile <<\"EOF\"\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"\nEOF'",
+      # Persist pyenv env for login shells / non-interactive invocations that source .profile
+      "sudo -u ${var.ssh_username} -H bash -lc 'grep -q \"PYENV_ROOT\" ~/.profile || cat >> ~/.profile <<\"EOF\"\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"\nEOF'",
 
-    # Build + activate Python
-    "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; pyenv install -s 3.12.3'",
-    "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; pyenv global 3.12.3; pyenv rehash'",
+      # Build + activate Python
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; pyenv install -s 3.12.3'",
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; pyenv global 3.12.3; pyenv rehash'",
 
-    # Upgrade pip using the pyenv-selected python
-    "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; python -m pip install --upgrade pip'",
+      # Upgrade pip using the pyenv-selected python
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; python -m pip install --upgrade pip'",
 
-    # Verify pip/python in the same initialized environment (this was your failure point)
-    "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; python -m pip --version'",
-    "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; python --version; which python'"
-  ]
-}
+      # Verify pip/python in the same initialized environment (this was your failure point)
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; python -m pip --version'",
+      "sudo -u ${var.ssh_username} -H bash -lc 'export PYENV_ROOT=\"$HOME/.pyenv\"; export PATH=\"$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH\"; eval \"$(pyenv init -)\"; python --version; which python'"
+    ]
+  }
 
 
   # Shell provisioner #3: cleanup / template hygiene
